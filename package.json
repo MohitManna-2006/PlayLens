@@ -1,0 +1,27 @@
+{
+  "name": "playlens",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "uv run --directory services/api uvicorn playlens_api.main:app --reload --port 8000",
+    "lint": "pnpm --filter web lint && uv run ruff check .",
+    "format": "pnpm --filter web format && uv run ruff format .",
+    "typecheck": "pnpm --filter web typecheck && uv run mypy services/api ml",
+    "test": "pnpm --filter web test && uv run pytest",
+    "build": "pnpm --filter web build",
+    "contracts:generate": "echo 'Contract generation not implemented yet'",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "unrs-resolver"
+    ]
+  }
+}

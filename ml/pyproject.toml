@@ -1,0 +1,27 @@
+[project]
+name = "playlens-ml"
+version = "0.1.0"
+description = "PlayLens ML package"
+requires-python = ">=3.12"
+dependencies = [
+    "torch",
+    "torch-geometric",
+    "scikit-learn",
+    "lightgbm",
+    "polars",
+    "duckdb",
+    "pyarrow",
+    "numpy",
+    "mlflow"
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "ruff>=0.3.2",
+    "mypy>=1.9.0"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
