@@ -1,78 +1,101 @@
 /**
  * FastAPI implementation of the /api/v1 contract (Masterbrain §21.1).
- * Separates network, user (4xx), and server (5xx) failures so each screen
- * can show the right recovery action.
+ * Separates network, user (4xx), server (5xx), and unavailable failures so each
+ * screen can show the right state. It never substitutes fixture data.
  */
-import type { CounterfactualRequest, PlayQuery, SimilarRequest, TrajectoryRequest } from "@/lib/contracts";
-import { ApiError } from "@/lib/contracts";
+import type { PlayQuery } from "@/lib/contracts";
+import { ApiError, ErrorEnvelopeSchema } from "@/lib/contracts";
 import type { RawSource } from "./types";
+
+/**
+ * Model capabilities the API does not serve yet (no trained model exists).
+ * These reject without a network call; screens render an unavailable state.
+ */
+function notServed(what: string, why = "no model has been trained or served"): Promise<never> {
+  return Promise.reject(new ApiError(`${what} is not available from the PlayLens API yet: ${why}.`, null, "unavailable", "not_served"));
+}
 
 export class HttpSource implements RawSource {
   readonly kind = "api" as const;
 
-  constructor(private readonly baseUrl: string) {}
+  constructor(
+    private readonly baseUrl: string,
+    private readonly fetcher: typeof fetch = (...args) => fetch(...args),
+  ) {}
 
   private async request(path: string, init: RequestInit & { signal?: AbortSignal } = {}): Promise<unknown> {
+    const url = `${this.baseUrl.replace(/\/$/, "")}${path}`;
     let res: Response;
     try {
-      res = await fetch(`${this.baseUrl.replace(/\/$/, "")}/api/v1${path}`, {
-        ...init,
-        headers: { Accept: "application/json", ...(init.body ? { "Content-Type": "application/json" } : {}), ...init.headers },
-      });
+      res = await this.fetcher(url, { ...init, headers: { Accept: "application/json", ...init.headers } });
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") throw err;
-      throw new ApiError("The PlayLens API could not be reached.", null, "network");
+      throw new ApiError(
+        `The PlayLens API could not be reached at ${this.baseUrl}. Start it with \`pnpm dev:api\`, or check NEXT_PUBLIC_PLAYLENS_API_BASE_URL.`,
+        null,
+        "network",
+      );
     }
     if (!res.ok) {
-      let detail = res.statusText;
+      let message = res.statusText || `Request failed (${res.status})`;
+      let code: string | null = null;
       try {
-        const body = (await res.json()) as { detail?: unknown };
-        if (typeof body.detail === "string") detail = body.detail;
+        const env = ErrorEnvelopeSchema.safeParse(await res.json());
+        if (env.success) {
+          message = env.data.error.message;
+          code = env.data.error.code;
+        }
       } catch {
         /* non-JSON error body */
       }
-      throw new ApiError(detail || `Request failed (${res.status})`, res.status, res.status < 500 ? "user" : "server");
+      throw new ApiError(message, res.status, res.status < 500 ? "user" : "server", code);
     }
-    return res.json();
+    try {
+      return await res.json();
+    } catch {
+      throw new ApiError(`The response from ${path} was not valid JSON.`, res.status, "contract");
+    }
   }
 
-  private post(path: string, body: unknown, signal?: AbortSignal) {
-    return this.request(path, { method: "POST", body: JSON.stringify(body), signal });
+  getDataset(signal?: AbortSignal) {
+    return this.request(`/api/v1/dataset`, { signal });
   }
-
   listPlays(q: PlayQuery, signal?: AbortSignal) {
     const params = new URLSearchParams();
     for (const [k, v] of Object.entries(q)) if (v !== undefined && v !== "") params.set(k, String(v));
-    return this.request(`/plays?${params}`, { signal });
+    return this.request(`/api/v1/plays?${params}`, { signal });
   }
   getFacets(signal?: AbortSignal) {
-    return this.request(`/plays/facets`, { signal });
+    return this.request(`/api/v1/plays/facets`, { signal });
   }
   getPlay(id: string, signal?: AbortSignal) {
-    return this.request(`/plays/${encodeURIComponent(id)}`, { signal });
+    return this.request(`/api/v1/plays/${encodeURIComponent(id)}`, { signal });
   }
   getFrames(id: string, signal?: AbortSignal) {
-    return this.request(`/plays/${encodeURIComponent(id)}/frames`, { signal });
+    return this.request(`/api/v1/plays/${encodeURIComponent(id)}/frames`, { signal });
+  }
+  getFuture(id: string, signal?: AbortSignal) {
+    return this.request(`/api/v1/plays/${encodeURIComponent(id)}/future`, { signal });
   }
   listModels(signal?: AbortSignal) {
-    return this.request(`/models`, { signal });
+    return this.request(`/api/v1/models`, { signal });
   }
-  findSimilar(req: SimilarRequest, signal?: AbortSignal) {
-    return this.post(`/search/similar`, req, signal);
+  findSimilar() {
+    return notServed("Similar-play retrieval");
   }
-  compare(left: string, right: string, signal?: AbortSignal) {
-    return this.post(`/compare`, { left_play_id: left, right_play_id: right }, signal);
+  compare() {
+    return notServed("Structural comparison", "the compare endpoint is not implemented");
   }
-  predictTrajectory(req: TrajectoryRequest, signal?: AbortSignal) {
-    return this.post(`/predict/trajectory`, req, signal);
+  predictTrajectory() {
+    return notServed("Trajectory prediction");
   }
-  getPlayLabConfig(id: string, signal?: AbortSignal) {
-    return this.request(`/playlab/${encodeURIComponent(id)}/config`, { signal });
+  getPlayLabConfig() {
+    return notServed("PlayLab");
   }
-  runCounterfactual(req: CounterfactualRequest, signal?: AbortSignal) {
-    return this.post(`/playlab/counterfactual`, req, signal);
+  runCounterfactual() {
+    return notServed("PlayLab");
   }
-  getEvaluation(modelVersion: string, signal?: AbortSignal) {
-    return this.request(`/evaluation/summary?model_version=${encodeURIComponent(modelVersion)}`, { signal });
+  getEvaluation() {
+    return notServed("Model evaluation", "no model has been evaluated");
   }
 }

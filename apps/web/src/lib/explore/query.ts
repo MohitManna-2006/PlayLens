@@ -20,8 +20,11 @@ export function parseQuery(sp: URLSearchParams): PlayQuery {
   return {
     q: sp.get("q") || undefined,
     season: int(sp.get("season")),
+    week: int(sp.get("week")),
     offense: sp.get("offense") || undefined,
     defense: sp.get("defense") || undefined,
+    formation: sp.get("formation") || undefined,
+    coverage: sp.get("coverage") || undefined,
     down: int(sp.get("down")),
     distance: DistanceBandSchema.safeParse(sp.get("distance")).data,
     play_type: PlayTypeSchema.safeParse(sp.get("play_type")).data,
@@ -41,8 +44,11 @@ export function toSearch(q: PlayQuery, extra: Record<string, string | null | und
   };
   set("q", q.q);
   set("season", q.season);
+  set("week", q.week);
   set("offense", q.offense);
   set("defense", q.defense);
+  set("formation", q.formation);
+  set("coverage", q.coverage);
   set("down", q.down);
   set("distance", q.distance);
   set("play_type", q.play_type);
@@ -56,7 +62,9 @@ export function toSearch(q: PlayQuery, extra: Record<string, string | null | und
 }
 
 export function activeFilterCount(q: PlayQuery): number {
-  return [q.season, q.offense, q.defense, q.down, q.distance, q.play_type, q.quarter, q.outcome].filter((v) => v !== undefined).length;
+  return [q.season, q.week, q.offense, q.defense, q.formation, q.coverage, q.down, q.distance, q.play_type, q.quarter, q.outcome].filter(
+    (v) => v !== undefined,
+  ).length;
 }
 
 export const DISTANCE_LABELS: Record<string, string> = { short: "Short (1–3)", medium: "Medium (4–7)", long: "Long (8+)" };

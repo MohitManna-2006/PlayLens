@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cosine, DASH, downDistance, elapsed, fixed, ms, outcome, quarterClock, signed, yards } from "./format";
+import { codeLabel, cosine, DASH, downDistance, elapsed, fixed, ms, outcome, passResult, playResult, quarterClock, signed, tokenLabel, yards } from "./format";
 
 describe("numeric formatting (§13)", () => {
   it("uses the bible's precision per quantity", () => {
@@ -29,5 +29,29 @@ describe("numeric formatting (§13)", () => {
     expect(quarterClock({ quarter: 2, game_clock: "06:18" })).toBe("Q2 06:18");
     expect(outcome(12)).toBe("+12 yd");
     expect(outcome(null)).toBeNull();
+  });
+});
+
+describe("dataset labels", () => {
+  it("formats supplied codes without inventing meaning", () => {
+    expect(codeLabel("COVER_3_ZONE")).toBe("Cover 3 zone");
+    expect(codeLabel("SHOTGUN")).toBe("Shotgun");
+    expect(codeLabel("3x1")).toBe("3x1");
+    expect(codeLabel(null)).toBeNull();
+    expect(passResult("IN")).toBe("Intercepted");
+    expect(passResult("R")).toBe("R");
+  });
+
+  it("shows yards only for completions and handles missing outcomes", () => {
+    expect(playResult({ pass_result: "C", yards_gained: 18 })).toBe("Complete · +18 yd");
+    expect(playResult({ pass_result: "I", yards_gained: 0 })).toBe("Incomplete");
+    expect(playResult({ pass_result: null, yards_gained: -3 })).toBe("−3 yd");
+    expect(playResult({ pass_result: null, yards_gained: null })).toBeNull();
+  });
+
+  it("labels tokens by jersey, falling back to position", () => {
+    expect(tokenLabel({ jersey: "12", position: "QB" })).toBe("12");
+    expect(tokenLabel({ jersey: null, position: "CB" })).toBe("CB");
+    expect(tokenLabel({ jersey: null, position: null })).toBeNull();
   });
 });

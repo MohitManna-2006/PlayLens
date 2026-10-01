@@ -2,10 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import type { PlayDetail } from "@/lib/contracts";
 import { getClient } from "@/lib/datasource";
 import { buildSeries, type TrackingSeries } from "@/lib/tracking/series";
 
-/** Play detail + frames through the query cache, assembled into a TrackingSeries. */
+/** Play detail + observed frames through the query cache, assembled into a TrackingSeries. */
 export function usePlayData(playId: string | null) {
   const client = getClient();
   const detail = useQuery({
@@ -27,4 +28,19 @@ export function usePlayData(playId: string | null) {
     }
   }, [detail.data, frames.data]);
   return { detail, frames, series: built.series, seriesError: built.error };
+}
+
+/**
+ * Held-out actual future trajectories. Fetched only when requested and only for
+ * plays that report some, so observed replay never depends on future data.
+ */
+export function usePlayFuture(detail: PlayDetail | undefined, requested: boolean) {
+  const client = getClient();
+  const available = !!detail && detail.tracking.future_frame_count > 0 && detail.tracking.predicted_player_count > 0;
+  return useQuery({
+    queryKey: ["future", detail?.id],
+    queryFn: ({ signal }) => client.getFuture(detail!.id, signal),
+    enabled: requested && available,
+    retry: false,
+  });
 }

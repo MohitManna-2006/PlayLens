@@ -1,0 +1,201 @@
+{
+  "annotations": {
+    "coverage_family": "ZONE_COVERAGE",
+    "coverage_type": "COVER_3_ZONE",
+    "dropback_distance": 3.5,
+    "dropback_type": "TRADITIONAL",
+    "pass_location_type": "INSIDE_BOX",
+    "play_action": false,
+    "target_route": "OUT"
+  },
+  "away_team": "CCC",
+  "ball_landing": {
+    "in_field": true,
+    "x": 47.0,
+    "x_raw": 73.0,
+    "y": 20.0,
+    "y_raw": 33.333
+  },
+  "context": {
+    "defenders_in_the_box": 6,
+    "expected_points": 1.25,
+    "home_score": 0,
+    "home_win_probability": 0.55,
+    "offense_formation": "SHOTGUN",
+    "receiver_alignment": "2x2",
+    "visitor_score": 3,
+    "visitor_win_probability": 0.45
+  },
+  "coordinates": {
+    "description": "Yards. x 0-120 along the field including end zones, y 0-53.33 across it. Offense attacks toward +x on every play (left-moving plays rotated 180 deg). Angles in degrees, 0 = +y, clockwise.",
+    "raw_play_direction": "left",
+    "raw_transform": "rotate_180",
+    "system": "playlens-canonical-v1"
+  },
+  "defense": "DDD",
+  "description": "(12:00) Synthetic pass to 101 for 7 yards.",
+  "down": 2,
+  "events": [],
+  "first_down_x": 41.0,
+  "frame_rate_hz": 10.0,
+  "game_clock": "12:00",
+  "game_date": "2023-09-07",
+  "game_id": 2099090011,
+  "home_team": "DDD",
+  "id": "2099090011-101",
+  "line_of_scrimmage_x": 35.0,
+  "offense": "CCC",
+  "outcome": {
+    "expected_points_added": 0.4,
+    "home_win_probability_added": -0.01,
+    "nullified_by_penalty": false,
+    "pass_length": 5,
+    "pass_result": "C",
+    "penalty_yards": null,
+    "pre_penalty_yards_gained": 7,
+    "visitor_win_probability_added": 0.01,
+    "yards_gained": 7
+  },
+  "play_direction": "left",
+  "play_id": 101,
+  "play_type": "pass",
+  "players": [
+    {
+      "jersey": null,
+      "name": "Player 1003",
+      "nfl_id": 1003,
+      "player_id": "1003",
+      "player_to_predict": false,
+      "position": "QB",
+      "role": "Passer",
+      "side": "offense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 1004",
+      "nfl_id": 1004,
+      "player_id": "1004",
+      "player_to_predict": true,
+      "position": "WR",
+      "role": "Targeted Receiver",
+      "side": "offense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 1005",
+      "nfl_id": 1005,
+      "player_id": "1005",
+      "player_to_predict": false,
+      "position": "WR",
+      "role": "Other Route Runner",
+      "side": "offense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 1006",
+      "nfl_id": 1006,
+      "player_id": "1006",
+      "player_to_predict": false,
+      "position": "TE",
+      "role": "Other Route Runner",
+      "side": "offense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 1007",
+      "nfl_id": 1007,
+      "player_id": "1007",
+      "player_to_predict": false,
+      "position": "RB",
+      "role": "Other Route Runner",
+      "side": "offense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 2003",
+      "nfl_id": 2003,
+      "player_id": "2003",
+      "player_to_predict": true,
+      "position": "CB",
+      "role": "Defensive Coverage",
+      "side": "defense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 2004",
+      "nfl_id": 2004,
+      "player_id": "2004",
+      "player_to_predict": true,
+      "position": "CB",
+      "role": "Defensive Coverage",
+      "side": "defense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 2005",
+      "nfl_id": 2005,
+      "player_id": "2005",
+      "player_to_predict": false,
+      "position": "FS",
+      "role": "Defensive Coverage",
+      "side": "defense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 2006",
+      "nfl_id": 2006,
+      "player_id": "2006",
+      "player_to_predict": false,
+      "position": "SS",
+      "role": "Defensive Coverage",
+      "side": "defense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 2007",
+      "nfl_id": 2007,
+      "player_id": "2007",
+      "player_to_predict": false,
+      "position": "ILB",
+      "role": "Defensive Coverage",
+      "side": "defense"
+    },
+    {
+      "jersey": null,
+      "name": "Player 2008",
+      "nfl_id": 2008,
+      "player_id": "2008",
+      "player_to_predict": false,
+      "position": "OLB",
+      "role": "Defensive Coverage",
+      "side": "defense"
+    }
+  ],
+  "provenance": {
+    "coordinate_convention": "Yards. x 0-120 along the field including end zones, y 0-53.33 across it. Offense attacks toward +x on every play (left-moving plays rotated 180 deg). Angles in degrees, 0 = +y, clockwise.",
+    "dataset": "nfl_bdb_2026_analytics",
+    "dataset_version": "nfl_bdb_2026_analytics@dev-fa7bb70d2aa3",
+    "schema_version": "2",
+    "source": "NFL Big Data Bowl 2026 Analytics (114239_nfl_competition_files_published_analytics_final)",
+    "subset": "dev",
+    "synthetic": false
+  },
+  "quarter": 1,
+  "season": 2023,
+  "tracking": {
+    "ball_tracked": false,
+    "defense_player_count": 6,
+    "first_frame_id": 1,
+    "future_duration_s": 0.7,
+    "future_frame_count": 7,
+    "last_frame_id": 23,
+    "observed_duration_s": 2.2,
+    "observed_frame_count": 23,
+    "offense_player_count": 5,
+    "player_count": 11,
+    "predicted_player_count": 3
+  },
+  "week": 1,
+  "yardline_label": "CCC 25",
+  "yards_to_go": 6
+}

@@ -1,0 +1,36 @@
+{
+  "coverages": [
+    "COVER_3_ZONE"
+  ],
+  "formations": [
+    "SHOTGUN"
+  ],
+  "play_types": [
+    "pass"
+  ],
+  "quarters": [
+    1
+  ],
+  "seasons": [
+    2023
+  ],
+  "teams": [
+    "AAA",
+    "BBB",
+    "CCC",
+    "DDD",
+    "EEE",
+    "FFF",
+    "GGG",
+    "HHH",
+    "III",
+    "JJJ",
+    "KKK",
+    "LLL"
+  ],
+  "weeks": [
+    1,
+    2,
+    3
+  ]
+}

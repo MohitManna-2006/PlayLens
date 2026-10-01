@@ -16,7 +16,7 @@ import { useAnalystState } from "@/lib/analyst/store";
 import type { PlayPage, PlayQuery, PlaySummary } from "@/lib/contracts";
 import { errorMessage, getClient } from "@/lib/datasource";
 import { parseQuery, toSearch } from "@/lib/explore/query";
-import { cosine, downDistance, matchup, outcome, quarterClock } from "@/lib/format";
+import { codeLabel, cosine, downDistance, matchup, playResult, quarterClock } from "@/lib/format";
 import { atLeast, useBreakpoint } from "@/lib/hooks/useBreakpoint";
 import { readRecentRaw, parseRecent } from "@/lib/hooks/recent";
 
@@ -140,8 +140,8 @@ export function ExploreScreen() {
             </h2>
             <ul className="mt-1">
               {recent.map((r) => (
-                <li key={r.play_id} className="flex items-baseline gap-3 py-1">
-                  <Link href={`/play/${encodeURIComponent(r.play_id)}`} onClick={rememberScroll} className="link-quiet text-body-2 text-fg">
+                <li key={r.id} className="flex items-baseline gap-3 py-1">
+                  <Link href={`/play/${encodeURIComponent(r.id)}`} onClick={rememberScroll} className="link-quiet text-body-2 text-fg">
                     {r.label}
                   </Link>
                   <span className="num truncate text-meta text-muted">{r.meta}</span>
@@ -317,7 +317,7 @@ function PlayTable({
         <StatusState kind="empty" title="No tracking plays available">
           {page.dataset.dataset_version
             ? `Dataset ${page.dataset.dataset_version} has no ingested plays.`
-            : "No dataset has been ingested yet. Run the ingestion pipeline to load tracking data."}
+            : "No dataset has been ingested yet. Run `pnpm data:dev` to preprocess the tracking data, then restart the API."}
         </StatusState>
       );
     }
@@ -356,7 +356,12 @@ function PlayTable({
             </th>
           )}
           {!compact && (
-            <th scope="col" className="w-24 px-3 text-right font-normal">
+            <th scope="col" className="hidden w-32 px-3 font-normal lg:table-cell">
+              Coverage
+            </th>
+          )}
+          {!compact && (
+            <th scope="col" className="w-40 px-3 text-right font-normal">
               {showScore ? "Cosine" : "Result"}
             </th>
           )}
@@ -384,6 +389,11 @@ function PlayTable({
                   </td>
                 )}
                 {!compact && (
+                  <td className="hidden px-3 lg:table-cell">
+                    <div className="skeleton h-3 w-16" />
+                  </td>
+                )}
+                {!compact && (
                   <td className="px-3">
                     <div className="skeleton ml-auto h-3 w-10" />
                   </td>
@@ -394,22 +404,22 @@ function PlayTable({
           : page.items.flatMap((p) => {
               const rows = [
                 <PlayRow
-                  key={p.play_id}
+                  key={p.id}
                   play={p}
                   stale={updating}
                   compact={compact}
-                  previewing={previewId === p.play_id}
-                  score={showScore ? (page.similarity?.scores[p.play_id] ?? null) : undefined}
-                  onPreview={() => onPreview(p.play_id)}
+                  previewing={previewId === p.id}
+                  score={showScore ? (page.similarity?.scores[p.id] ?? null) : undefined}
+                  onPreview={() => onPreview(p.id)}
                   onOpen={onOpen}
-                  compareHref={compareHref(p.play_id)}
+                  compareHref={compareHref(p.id)}
                 />,
               ];
-              if (inlinePreview && previewId === p.play_id) {
+              if (inlinePreview && previewId === p.id) {
                 rows.push(
-                  <tr key={`${p.play_id}-preview`} className="border-b border-border">
-                    <td colSpan={compact ? 2 : 5} className="p-0">
-                      <PlayPreview playId={p.play_id} onClose={onClosePreview} compareHref={compareHref(p.play_id)} variant="inline" />
+                  <tr key={`${p.id}-preview`} className="border-b border-border">
+                    <td colSpan={compact ? 2 : 6} className="p-0">
+                      <PlayPreview playId={p.id} onClose={onClosePreview} compareHref={compareHref(p.id)} variant="inline" />
                     </td>
                   </tr>,
                 );
@@ -440,7 +450,7 @@ function PlayRow({
   onOpen: () => void;
   compareHref: string;
 }) {
-  const result = score !== undefined ? cosine(score) : outcome(play.outcome_yards);
+  const result = score !== undefined ? cosine(score) : playResult(play.outcome);
   return (
     <tr
       className={`group relative h-14 border-b border-border transition-colors duration-[var(--dur-hover)] ${
@@ -450,7 +460,7 @@ function PlayRow({
       <td className="relative py-3 pr-3">
         {previewing && <span aria-hidden className="absolute top-0 bottom-0 -left-[var(--page-pad)] w-0.5 bg-accent md:left-0 md:-ml-3" />}
         <Link
-          href={`/play/${encodeURIComponent(play.play_id)}`}
+          href={`/play/${encodeURIComponent(play.id)}`}
           onClick={onOpen}
           className={`block truncate text-body-2 leading-4 font-medium hover:underline hover:underline-offset-4 ${stale ? "text-fg-2" : "text-fg"}`}
         >
@@ -468,7 +478,12 @@ function PlayRow({
       {!compact && <td className="num px-3 text-meta text-fg-2">{quarterClock(play) ?? "—"}</td>}
       {!compact && <td className="num px-3 text-meta text-fg-2">{downDistance(play) ?? "—"}</td>}
       {!compact && (
-        <td className="num px-3 text-right text-meta text-fg-2">
+        <td className="hidden truncate px-3 text-caption text-fg-2 lg:table-cell" title={play.context.offense_formation ? `Formation ${codeLabel(play.context.offense_formation)}` : undefined}>
+          {codeLabel(play.annotations.coverage_type) ?? <span aria-label="Coverage not supplied">—</span>}
+        </td>
+      )}
+      {!compact && (
+        <td className="num px-3 text-right text-meta whitespace-nowrap text-fg-2">
           {result ?? <span aria-label="Result unknown">—</span>}
         </td>
       )}
@@ -477,7 +492,7 @@ function PlayRow({
           <button
             type="button"
             className="btn btn-quiet btn-icon"
-            aria-label={`${previewing ? "Close preview of" : "Preview"} play ${play.play_id}`}
+            aria-label={`${previewing ? "Close preview of" : "Preview"} play ${play.id}`}
             aria-pressed={previewing}
             onClick={onPreview}
           >
@@ -488,11 +503,11 @@ function PlayRow({
       {!compact && (
         <td className="px-0">
           <div className="flex justify-end gap-1">
-            <Tooltip content={previewing ? "Close preview" : "Preview snap frame"} describe={false}>
+            <Tooltip content={previewing ? "Close preview" : "Preview"} describe={false}>
               <button
                 type="button"
                 className="btn btn-quiet btn-icon"
-                aria-label={`${previewing ? "Close preview of" : "Preview"} play ${play.play_id}`}
+                aria-label={`${previewing ? "Close preview of" : "Preview"} play ${play.id}`}
                 aria-pressed={previewing}
                 onClick={onPreview}
               >
@@ -502,7 +517,7 @@ function PlayRow({
             <Tooltip content="Compare" describe={false}>
               <Link
                 href={compareHref}
-                aria-label={`Compare play ${play.play_id}`}
+                aria-label={`Compare play ${play.id}`}
                 className="btn btn-quiet btn-icon opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <GitCompareArrows size={16} strokeWidth={1.5} aria-hidden />

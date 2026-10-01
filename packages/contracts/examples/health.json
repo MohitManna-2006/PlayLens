@@ -1,0 +1,12 @@
+{
+  "dataset": {
+    "dataset_version": "nfl_bdb_2026_analytics@dev-fa7bb70d2aa3",
+    "error": null,
+    "loaded": true,
+    "play_count": 6,
+    "subset": "dev"
+  },
+  "service": "playlens-api",
+  "status": "ok",
+  "version": "0.2.0"
+}

@@ -1,0 +1,12 @@
+{
+  "dataset": "nfl_bdb_2026_analytics",
+  "dataset_version": "nfl_bdb_2026_analytics@dev-fa7bb70d2aa3",
+  "generated_at": "2026-01-01T00:00:00+00:00",
+  "license_note": "NFL Big Data Bowl 2026 competition data, used under the competition's data-use terms for development and portfolio demonstration. Raw and processed data are not committed.",
+  "play_count": 6,
+  "schema_version": "2",
+  "source": "114239_nfl_competition_files_published_analytics_final",
+  "subset": "dev",
+  "synthetic": false,
+  "title": "NFL Big Data Bowl 2026 Analytics"
+}

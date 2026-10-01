@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { AnnouncerProvider } from "@/components/ui/Announcer";
-import { DATA_SOURCE_KIND } from "@/lib/datasource";
+import { API_BASE_URL, DATA_SOURCE_KIND } from "@/lib/datasource";
 import { AnalystStore } from "@/lib/analyst/store";
 import { HttpAnalystTransport, LocalToolTransport } from "@/lib/analyst/transports";
 
@@ -30,7 +30,7 @@ export function Providers({ children }: { children: ReactNode }) {
     () =>
       new AnalystStore(
         DATA_SOURCE_KIND === "api"
-          ? new HttpAnalystTransport(process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000")
+          ? new HttpAnalystTransport(API_BASE_URL)
           : new LocalToolTransport(),
       ),
   );

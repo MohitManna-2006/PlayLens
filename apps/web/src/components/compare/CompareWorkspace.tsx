@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { AnalystPane } from "@/components/analyst/AnalystPane";
-import { changeOverlay, FieldLegend, overlayLegend, OverlayControl, TOKEN_LEGEND, ViewMenu, type ViewMode } from "@/components/field/FieldControls";
+import { changeOverlay, FieldLegend, overlayLegend, OverlayControl, tokenLegend, ViewMenu, type ViewMode } from "@/components/field/FieldControls";
 import { OrientationLabel, STAGE_HEIGHT, StageLegend, StageNote, StagePlaceholder } from "@/components/field/FieldStage";
 import { FieldViewport } from "@/components/field/FieldViewport";
 import { FrameDataTable } from "@/components/field/FrameDataTable";
@@ -24,6 +24,7 @@ import type { AnalystAction } from "@/lib/analyst/schema";
 import { useAnalystState, type ActionOutcome } from "@/lib/analyst/store";
 import { align, phaseAvailable, type Alignment, type AlignMode } from "@/lib/compare/alignment";
 import type { CompareResult, PlaySummary } from "@/lib/contracts";
+import { isUnavailable } from "@/lib/contracts";
 import { errorMessage, getClient } from "@/lib/datasource";
 import { cosine, downDistance, elapsed, fixed, matchup, playerLabel, quarterClock, signed } from "@/lib/format";
 import { atLeast, useBreakpoint } from "@/lib/hooks/useBreakpoint";
@@ -428,7 +429,7 @@ export function CompareWorkspace() {
               ))}
             </div>
           )}
-          <FieldLegend items={TOKEN_LEGEND} className="ml-auto hidden flex-nowrap lg:flex" />
+          <FieldLegend items={tokenLegend(!ls || !rs || !!ls.ball || !!rs.ball)} className="ml-auto hidden flex-nowrap lg:flex" />
         </div>
 
         <div className={sidePane ? "grid gap-[var(--gap)]" : undefined} style={sidePane ? { gridTemplateColumns: "minmax(0,1fr) var(--analyst-w)" } : undefined}>
@@ -492,7 +493,16 @@ export function CompareWorkspace() {
 
       {analystOpen && !sidePane && <AnalystPane variant={single ? "sheet" : "inline"} className="mt-4" />}
 
-      {rightId && <Differences result={cmp.data} error={cmp.error ? errorMessage(cmp.error) : null} loading={cmp.isPending} leftId={leftId} rightId={rightId} />}
+      {rightId && (
+        <Differences
+          result={cmp.data}
+          error={cmp.error ? errorMessage(cmp.error) : null}
+          unavailable={isUnavailable(cmp.error)}
+          loading={cmp.isPending}
+          leftId={leftId}
+          rightId={rightId}
+        />
+      )}
 
       {ls && (
         <FrameDataTable series={ls} time={leftSource} orientation="normalized" selectedId={selected?.side === "left" ? selected.id : null} onSelect={(id) => onSelect("left", id)} title="Left frame data" />
@@ -553,10 +563,10 @@ function ChooseRight({ leftId }: { leftId: string }) {
             </p>
             <ul className="mt-3">
               {sim.data.results.map((r) => (
-                <li key={r.play.play_id} className="flex h-10 items-center gap-3 border-b border-border">
+                <li key={r.play.id} className="flex h-10 items-center gap-3 border-b border-border">
                   <span className="min-w-0 flex-1 truncate text-body-2">{matchup(r.play)}</span>
                   <span className="num text-meta text-fg-2">{cosine(r.score)}</span>
-                  <Link href={`/compare?left=${encodeURIComponent(leftId)}&right=${encodeURIComponent(r.play.play_id)}`} className="btn btn-quiet btn-sm">
+                  <Link href={`/compare?left=${encodeURIComponent(leftId)}&right=${encodeURIComponent(r.play.id)}`} className="btn btn-quiet btn-sm">
                     Compare
                   </Link>
                 </li>
@@ -683,7 +693,21 @@ function CompareDock({ clock, alignment, left, right, onUnlink }: { clock: Clock
   );
 }
 
-function Differences({ result, error, loading, leftId, rightId }: { result: CompareResult | undefined; error: string | null; loading: boolean; leftId: string; rightId: string }) {
+function Differences({
+  result,
+  error,
+  unavailable,
+  loading,
+  leftId,
+  rightId,
+}: {
+  result: CompareResult | undefined;
+  error: string | null;
+  unavailable: boolean;
+  loading: boolean;
+  leftId: string;
+  rightId: string;
+}) {
   return (
     <section aria-labelledby="diff-heading" className="mt-6">
       <p className="text-body-2 text-fg-2">
@@ -703,7 +727,7 @@ function Differences({ result, error, loading, leftId, rightId }: { result: Comp
       {loading ? (
         <div className="skeleton mt-3 h-40 w-full" aria-label="Loading measures" />
       ) : error ? (
-        <StatusState kind="error" title="Measures unavailable">
+        <StatusState kind={unavailable ? "unavailable" : "error"} title="Measures unavailable">
           {error}
         </StatusState>
       ) : result ? (

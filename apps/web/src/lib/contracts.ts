@@ -1,18 +1,27 @@
 /**
- * Web ⇄ API contract (Masterbrain §21, C01). Every payload that crosses the
- * boundary is parsed with these schemas, including the development fixture,
- * so the fixture cannot drift from what the FastAPI service must return.
+ * Web ⇄ API contract (Masterbrain §21, C01), mirrored from the Pydantic models
+ * in services/api/src/playlens_api/schemas. Every payload that crosses the
+ * boundary is parsed with these schemas, including the development fixture, so
+ * neither source can drift from the other unnoticed.
  *
- * Coordinates are always SOURCE coordinates in yards: x ∈ [0, 120] along the
- * long axis including both end zones, y ∈ [0, 53⅓] across the field.
- * Angles follow the Next Gen Stats convention: degrees, 0° = +y, clockwise.
- * Direction normalization is a display transform only (lib/tracking/geometry).
+ * Identity: a play resource's `id` is the PlayLens play ID "<game_id>-<play_id>"
+ * (lib/playId). `game_id` and `play_id` are the NFL natural key; `play_id` alone
+ * repeats across games. Requests for model features (trajectory, similarity,
+ * PlayLab) still name the PlayLens ID `play_id`; those endpoints are not served yet.
+ *
+ * Coordinates are CANONICAL yards: x ∈ [0, 120] along the long axis including
+ * both end zones, y ∈ [0, 53⅓] across the field, and the offense always attacks
+ * toward +x. Plays recorded moving left were rotated 180° during preprocessing;
+ * `play_direction` keeps the recorded direction so the Source view can undo it.
+ * Angles: degrees, 0° = +y, clockwise (Next Gen Stats convention).
  */
 import { z } from "zod";
 
-export const SCHEMA_VERSION = "1";
+export const SCHEMA_VERSION = "2";
 
 const nullableNumber = z.number().nullable();
+const nullableInt = z.number().int().nullable();
+const nullableString = z.string().nullable();
 
 export const PlaySideSchema = z.enum(["offense", "defense"]);
 export type PlaySide = z.infer<typeof PlaySideSchema>;
@@ -25,41 +34,105 @@ export type PlayType = z.infer<typeof PlayTypeSchema>;
 
 export const ProvenanceSchema = z.object({
   source: z.string(),
+  dataset: z.string(),
   dataset_version: z.string(),
   schema_version: z.string(),
   coordinate_convention: z.string(),
   synthetic: z.boolean(),
+  subset: nullableString,
 });
 export type Provenance = z.infer<typeof ProvenanceSchema>;
 
+/** Known before the snap. */
+export const PlayContextSchema = z.object({
+  offense_formation: nullableString,
+  receiver_alignment: nullableString,
+  defenders_in_the_box: nullableInt,
+  home_score: nullableInt,
+  visitor_score: nullableInt,
+  home_win_probability: nullableNumber,
+  visitor_win_probability: nullableNumber,
+  expected_points: nullableNumber,
+});
+export type PlayContext = z.infer<typeof PlayContextSchema>;
+
+/** Charted labels describing what happened during the play; not pre-snap information. */
+export const PlayAnnotationsSchema = z.object({
+  coverage_family: nullableString,
+  coverage_type: nullableString,
+  target_route: nullableString,
+  play_action: z.boolean().nullable(),
+  dropback_type: nullableString,
+  dropback_distance: nullableNumber,
+  pass_location_type: nullableString,
+});
+export type PlayAnnotations = z.infer<typeof PlayAnnotationsSchema>;
+
+/** Post-play results. Descriptive only. */
+export const PlayOutcomeSchema = z.object({
+  pass_result: nullableString,
+  pass_length: nullableInt,
+  yards_gained: nullableInt,
+  pre_penalty_yards_gained: nullableInt,
+  penalty_yards: nullableInt,
+  nullified_by_penalty: z.boolean().nullable(),
+  expected_points_added: nullableNumber,
+  home_win_probability_added: nullableNumber,
+  visitor_win_probability_added: nullableNumber,
+});
+export type PlayOutcome = z.infer<typeof PlayOutcomeSchema>;
+
+export const TrackingSummarySchema = z.object({
+  observed_frame_count: z.number().int(),
+  observed_duration_s: z.number(),
+  first_frame_id: z.number().int(),
+  last_frame_id: z.number().int(),
+  player_count: z.number().int(),
+  offense_player_count: z.number().int(),
+  defense_player_count: z.number().int(),
+  predicted_player_count: z.number().int(),
+  future_frame_count: z.number().int(),
+  future_duration_s: z.number(),
+  ball_tracked: z.boolean(),
+});
+export type TrackingSummary = z.infer<typeof TrackingSummarySchema>;
+
 export const PlaySummarySchema = z.object({
-  play_id: z.string(),
-  game_id: z.string(),
-  season: z.number().int().nullable(),
-  week: z.number().int().nullable(),
-  game_date: z.string().nullable(),
-  play_sequence: z.number().int(),
+  id: z.string(),
+  game_id: z.number().int(),
+  play_id: z.number().int(),
+  season: nullableInt,
+  week: nullableInt,
+  game_date: nullableString,
   home_team: z.string(),
   away_team: z.string(),
-  offense: z.string().nullable(),
-  defense: z.string().nullable(),
-  quarter: z.number().int().nullable(),
-  game_clock: z.string().nullable(),
+  offense: nullableString,
+  defense: nullableString,
+  quarter: nullableInt,
+  game_clock: nullableString,
   down: z.number().int().min(1).max(4).nullable(),
-  yards_to_go: nullableNumber,
-  yardline_label: z.string().nullable(),
+  yards_to_go: nullableInt,
+  yardline_label: nullableString,
   play_type: PlayTypeSchema.nullable(),
-  description: z.string().nullable(),
-  outcome_yards: nullableNumber,
+  /** Supplied narrative; it describes the result, so it is post-play text. */
+  description: nullableString,
+  context: PlayContextSchema,
+  annotations: PlayAnnotationsSchema,
+  outcome: PlayOutcomeSchema,
+  tracking: TrackingSummarySchema,
 });
 export type PlaySummary = z.infer<typeof PlaySummarySchema>;
 
 export const PlayerRefSchema = z.object({
   player_id: z.string(),
-  jersey: z.string().nullable(),
-  name: z.string().nullable(),
+  nfl_id: nullableInt,
+  jersey: nullableString,
+  name: nullableString,
   side: PlaySideSchema,
-  position: z.string().nullable(),
+  position: nullableString,
+  role: nullableString,
+  /** Has a held-out future trajectory (dataset flag player_to_predict). */
+  player_to_predict: z.boolean(),
 });
 export type PlayerRef = z.infer<typeof PlayerRefSchema>;
 
@@ -69,13 +142,33 @@ export const PlayEventSchema = z.object({
 });
 export type PlayEvent = z.infer<typeof PlayEventSchema>;
 
+/** Where the pass lands: one point, not a ball track. */
+export const BallLandingSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  x_raw: z.number(),
+  y_raw: z.number(),
+  in_field: z.boolean(),
+});
+export type BallLanding = z.infer<typeof BallLandingSchema>;
+
+export const CoordinateInfoSchema = z.object({
+  system: z.string(),
+  description: z.string(),
+  raw_play_direction: PlayDirectionSchema.nullable(),
+  raw_transform: z.enum(["identity", "rotate_180"]),
+});
+
 export const PlayDetailSchema = PlaySummarySchema.extend({
   players: z.array(PlayerRefSchema),
   events: z.array(PlayEventSchema),
+  /** Recorded attack direction. Coordinates are already canonical. */
   play_direction: PlayDirectionSchema.nullable(),
   line_of_scrimmage_x: nullableNumber,
   first_down_x: nullableNumber,
   frame_rate_hz: z.number().positive(),
+  ball_landing: BallLandingSchema.nullable(),
+  coordinates: CoordinateInfoSchema,
   provenance: ProvenanceSchema,
 });
 export type PlayDetail = z.infer<typeof PlayDetailSchema>;
@@ -92,16 +185,53 @@ export const FramePlayerSchema = z.object({
 
 export const FrameSchema = z.object({
   frame_id: z.number().int(),
+  frame_index: z.number().int(),
   time_s: z.number(),
   ball: z.object({ x: z.number(), y: z.number() }).nullable(),
   players: z.array(FramePlayerSchema),
 });
 
+/** Observed tracking only; never contains held-out future positions. */
 export const FramesPayloadSchema = z.object({
-  play_id: z.string(),
+  id: z.string(),
+  dataset_version: z.string(),
+  schema_version: z.string(),
+  coordinate_system: z.string(),
+  frame_rate_hz: z.number().positive(),
+  observed_frame_count: z.number().int(),
   frames: z.array(FrameSchema),
 });
 export type FramesPayload = z.infer<typeof FramesPayloadSchema>;
+
+/** Held-out actual future positions from the dataset. Ground truth, not a prediction. */
+export const FuturePayloadSchema = z.object({
+  id: z.string(),
+  kind: z.literal("actual_future"),
+  description: z.string(),
+  dataset_version: z.string(),
+  schema_version: z.string(),
+  coordinate_system: z.string(),
+  frame_rate_hz: z.number().positive(),
+  origin_frame_id: z.number().int(),
+  origin_time_s: z.number(),
+  horizon_frames: z.number().int(),
+  horizon_s: z.number(),
+  trajectories: z.array(
+    z.object({
+      player_id: z.string(),
+      points: z.array(
+        z.object({
+          frame_id: z.number().int(),
+          frame_index: z.number().int(),
+          time_s: z.number(),
+          x: z.number(),
+          y: z.number(),
+        }),
+      ),
+    }),
+  ),
+});
+export type FuturePayload = z.infer<typeof FuturePayloadSchema>;
 
 export const PlaySortSchema = z.enum(["recent", "similarity"]);
 export type PlaySort = z.infer<typeof PlaySortSchema>;
@@ -115,8 +245,11 @@ export type OutcomeFilter = z.infer<typeof OutcomeFilterSchema>;
 export interface PlayQuery {
   q?: string;
   season?: number;
+  week?: number;
   offense?: string;
   defense?: string;
+  formation?: string;
+  coverage?: string;
   down?: number;
   distance?: DistanceBand;
   play_type?: PlayType;
@@ -129,10 +262,16 @@ export interface PlayQuery {
 }
 
 export const DatasetStatusSchema = z.object({
-  dataset_version: z.string().nullable(),
+  dataset: nullableString,
+  title: nullableString,
+  source: nullableString,
+  subset: nullableString,
+  dataset_version: nullableString,
+  schema_version: nullableString,
   play_count: z.number().int(),
-  source: z.string().nullable(),
   synthetic: z.boolean(),
+  license_note: nullableString,
+  generated_at: nullableString,
 });
 export type DatasetStatus = z.infer<typeof DatasetStatusSchema>;
 
@@ -155,7 +294,10 @@ export type PlayPage = z.infer<typeof PlayPageSchema>;
 
 export const FacetsSchema = z.object({
   seasons: z.array(z.number().int()),
+  weeks: z.array(z.number().int()),
   teams: z.array(z.string()),
+  formations: z.array(z.string()),
+  coverages: z.array(z.string()),
   play_types: z.array(PlayTypeSchema),
   quarters: z.array(z.number().int()),
 });
@@ -536,13 +678,36 @@ export type EvaluationReport = z.infer<typeof EvaluationReportSchema>;
 
 /* ---------- Errors ---------- */
 
+/** Error envelope returned by the API for every non-2xx response. */
+export const ErrorEnvelopeSchema = z.object({
+  error: z.object({
+    code: z.string(),
+    message: z.string(),
+    status: z.number().int(),
+    request_id: z.string().nullable(),
+    details: z.record(z.string(), z.unknown()).nullable(),
+  }),
+});
+
+/**
+ * `unavailable` marks a capability the selected source does not serve (for
+ * example a model endpoint before any model exists). Screens show it as an
+ * unavailable state, not as a failure.
+ */
+export type ApiErrorKind = "network" | "user" | "server" | "contract" | "unavailable";
+
 export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number | null,
-    readonly kind: "network" | "user" | "server" | "contract",
+    readonly kind: ApiErrorKind,
+    readonly code: string | null = null,
   ) {
     super(message);
     this.name = "ApiError";
   }
+}
+
+export function isUnavailable(err: unknown): boolean {
+  return err instanceof ApiError && err.kind === "unavailable";
 }

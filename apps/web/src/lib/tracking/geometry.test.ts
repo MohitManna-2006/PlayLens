@@ -7,19 +7,21 @@ import {
   isFlipped,
   screenToWorld,
   toDisplay,
+  toRecorded,
   toSource,
   velocityFromAngle,
   worldToScreen,
 } from "./geometry";
 
-describe("direction normalization", () => {
-  it("leaves plays moving right untouched", () => {
+describe("orientation transform over canonical coordinates", () => {
+  it("shows canonical coordinates unchanged in the normalized view", () => {
+    expect(isFlipped("left", "normalized")).toBe(false);
     expect(isFlipped("right", "normalized")).toBe(false);
     expect(toDisplay(30, 10, false)).toEqual({ x: 30, y: 10 });
   });
 
-  it("rotates plays moving left by 180° and round-trips exactly", () => {
-    const flipped = isFlipped("left", "normalized");
+  it("rotates plays recorded moving left by 180° in the source view and round-trips exactly", () => {
+    const flipped = isFlipped("left", "source");
     expect(flipped).toBe(true);
     const d = toDisplay(30, 10, flipped);
     expect(d.x).toBeCloseTo(FIELD_LENGTH - 30);
@@ -29,9 +31,17 @@ describe("direction normalization", () => {
     expect(back.y).toBeCloseTo(10);
   });
 
-  it("never transforms in source orientation or with unknown direction", () => {
-    expect(isFlipped("left", "source")).toBe(false);
-    expect(isFlipped(null, "normalized")).toBe(false);
+  it("never transforms right-moving plays or plays with unknown direction", () => {
+    expect(isFlipped("right", "source")).toBe(false);
+    expect(isFlipped(null, "source")).toBe(false);
+  });
+
+  it("recovers recorded coordinates from canonical ones (inverse of preprocessing)", () => {
+    // Canonical x 67.67 of a left play was recorded at 120 − 67.67 = 52.33.
+    const raw = toRecorded({ x: 67.67, y: 16.393333 }, "left");
+    expect(raw.x).toBeCloseTo(52.33, 6);
+    expect(raw.y).toBeCloseTo(36.94, 5);
+    expect(toRecorded({ x: 5, y: 6 }, "right")).toEqual({ x: 5, y: 6 });
   });
 
   it("rotates NGS angles with the positions", () => {

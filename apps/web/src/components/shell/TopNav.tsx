@@ -1,6 +1,7 @@
 "use client";
 
-import { Info, Keyboard, Menu as MenuIcon, PanelRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { CircleAlert, Database, Info, Keyboard, Menu as MenuIcon, PanelRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
@@ -8,7 +9,7 @@ import { MenuButton } from "@/components/ui/Menu";
 import { Popover } from "@/components/ui/Popover";
 import { Tooltip } from "@/components/ui/Tooltip";
 import { useAnalystState } from "@/lib/analyst/store";
-import { DATA_SOURCE_KIND } from "@/lib/datasource";
+import { API_BASE_URL, DATA_SOURCE_KIND, errorMessage, getClient } from "@/lib/datasource";
 import { useAnalystStore } from "./Providers";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 
@@ -69,7 +70,7 @@ export function TopNav() {
         </div>
 
         <div className="ml-auto flex items-center gap-1">
-          {DATA_SOURCE_KIND === "fixture" && <FixtureNotice />}
+          {DATA_SOURCE_KIND === "fixture" ? <FixtureNotice /> : <DatasetNotice />}
           <button
             type="button"
             ref={triggerRef}
@@ -95,6 +96,50 @@ export function TopNav() {
       </div>
       <ShortcutsDialog open={shortcuts} onClose={() => setShortcuts(false)} />
     </header>
+  );
+}
+
+/** Provenance for real data: which dataset and version the API serves, and its data-use note. */
+function DatasetNotice() {
+  const client = getClient();
+  const q = useQuery({ queryKey: ["dataset"], queryFn: ({ signal }) => client.getDataset(signal), retry: false });
+  const models = useQuery({ queryKey: ["models"], queryFn: ({ signal }) => client.listModels(signal), enabled: q.isSuccess });
+  if (q.isPending) return null;
+  const d = q.data;
+  return (
+    <Popover
+      label={d ? "About the dataset" : "API status"}
+      placement="bottom-end"
+      width={340}
+      className="p-4"
+      trigger={(props) => (
+        <button type="button" {...props} className={`btn btn-quiet ${d ? "text-muted" : "text-error"}`}>
+          {d ? <Database size={14} strokeWidth={1.5} aria-hidden /> : <CircleAlert size={14} strokeWidth={1.5} aria-hidden />}
+          <span className="hidden lg:inline">{d ? `NFL tracking · ${d.subset ?? "full"} subset` : "API unavailable"}</span>
+        </button>
+      )}
+    >
+      {() =>
+        d ? (
+          <div className="space-y-2 text-body-2 text-fg-2">
+            <p className="font-medium text-fg">{d.title ?? d.dataset}</p>
+            <p>
+              <span className="num text-fg">{d.play_count}</span> plays in the {d.subset ?? "full"} subset. Version{" "}
+              <span className="num text-fg">{d.dataset_version}</span>, schema v{d.schema_version}.
+            </p>
+            <p>Positions are canonical: the offense always attacks left to right. The ball is not tracked frame by frame.</p>
+            {models.data?.length === 0 && <p>No model is served yet, so forecasts, similar plays, and PlayLab are unavailable.</p>}
+            {d.license_note && <p className="text-caption text-muted">{d.license_note}</p>}
+          </div>
+        ) : (
+          <div className="space-y-2 text-body-2 text-fg-2">
+            <p className="font-medium text-fg">The PlayLens API is not responding</p>
+            <p>{errorMessage(q.error)}</p>
+            <p className="text-caption text-muted">API base URL: {API_BASE_URL}</p>
+          </div>
+        )
+      }
+    </Popover>
   );
 }
 
@@ -124,7 +169,7 @@ function FixtureNotice() {
             Forecasts come from a constant-velocity baseline, retrieval from a handcrafted formation descriptor, and PlayLab from
             a development mock. None has an evaluation run.
           </p>
-          <p className="text-caption text-muted">Set NEXT_PUBLIC_PLAYLENS_DATA_SOURCE=api to use the PlayLens API.</p>
+          <p className="text-caption text-muted">Unset NEXT_PUBLIC_PLAYLENS_DATA_SOURCE to use the PlayLens API with real tracking data.</p>
         </div>
       )}
     </Popover>

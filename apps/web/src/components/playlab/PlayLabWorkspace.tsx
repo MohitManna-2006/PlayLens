@@ -5,7 +5,7 @@ import { ArrowLeft, Ban, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { AnalystPane } from "@/components/analyst/AnalystPane";
-import { FieldLegend, TOKEN_LEGEND, type LegendItem } from "@/components/field/FieldControls";
+import { FieldLegend, tokenLegend, type LegendItem } from "@/components/field/FieldControls";
 import { OrientationLabel, STAGE_HEIGHT, StageLegend, StagePlaceholder } from "@/components/field/FieldStage";
 import { FieldViewport, type FieldApi } from "@/components/field/FieldViewport";
 import { allowedRegion, type PlayLabLayer } from "@/components/field/renderer";
@@ -18,6 +18,7 @@ import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { timelineLane, timeOrigin } from "@/components/play/PlayWorkspace";
 import { useAnalystState } from "@/lib/analyst/store";
 import type { CounterfactualResult, PlayLabConfig } from "@/lib/contracts";
+import { isUnavailable } from "@/lib/contracts";
 import { errorMessage, getClient } from "@/lib/datasource";
 import { validateEdit } from "@/lib/playlab/validate";
 import { downDistance, fixed, matchup, playerLabel, quarterClock, signed } from "@/lib/format";
@@ -243,6 +244,25 @@ export function PlayLabWorkspace({ playId }: { playId: string }) {
     </>
   );
 
+  if (config.isError && isUnavailable(config.error)) {
+    return (
+      <div className="mx-auto max-w-[calc(1680px+2*var(--page-pad))] px-[var(--page-pad)] pb-16">
+        {header}
+        <StatusState
+          kind="unavailable"
+          title="PlayLab is unavailable"
+          action={
+            <Link href={`/play/${encodeURIComponent(playId)}`} className="btn">
+              Return to play
+            </Link>
+          }
+        >
+          {errorMessage(config.error)} Counterfactuals need a served model, so PlayLab stays closed rather than showing invented results.
+        </StatusState>
+      </div>
+    );
+  }
+
   if (config.data && !config.data.available) {
     return (
       <div className="mx-auto max-w-[calc(1680px+2*var(--page-pad))] px-[var(--page-pad)] pb-16">
@@ -422,7 +442,7 @@ export function PlayLabWorkspace({ playId }: { playId: string }) {
                 Return to editable frame
               </button>
             )}
-            <FieldLegend items={TOKEN_LEGEND} className="ml-auto hidden flex-nowrap lg:flex" />
+            <FieldLegend items={tokenLegend(!series || !!series.ball)} className="ml-auto hidden flex-nowrap lg:flex" />
           </div>
           <div className="relative w-full" style={{ height: STAGE_HEIGHT }}>
             {detail.error || frames.error || seriesError ? (

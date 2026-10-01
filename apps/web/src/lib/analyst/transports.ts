@@ -140,6 +140,9 @@ export class HttpAnalystTransport implements AnalystTransport {
   async status(): Promise<ServiceStatus> {
     try {
       const res = await fetch(`${this.baseUrl}/api/v1/analyst/status`);
+      if (res.status === 404) {
+        return { status: "unavailable", mode: "llm", note: "This version of the PlayLens API does not serve the Analyst yet. Replay and play metadata still work." };
+      }
       if (!res.ok) throw new Error(String(res.status));
       const body = (await res.json()) as { available?: boolean; reason?: string | null };
       return body.available

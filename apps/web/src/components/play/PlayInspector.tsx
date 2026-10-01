@@ -6,8 +6,8 @@ import type { ReactNode } from "react";
 import { MetricRow } from "@/components/ui/MetricRow";
 import { StatusState } from "@/components/ui/StatusState";
 import type { ModelInfo, PlayDetail, PlayLabConfig } from "@/lib/contracts";
-import { downDistance, fixed, outcome, playerLabel, quarterClock, sideLabel } from "@/lib/format";
-import { isFlipped, toDisplay, type Orientation } from "@/lib/tracking/geometry";
+import { codeLabel, downDistance, fixed, playerLabel, playResult, quarterClock, sideLabel } from "@/lib/format";
+import { angleToDisplay, isFlipped, toDisplay, toRecorded, type Orientation } from "@/lib/tracking/geometry";
 import { DEFINITIONS, nearestOpponent, relativeSpeed } from "@/lib/tracking/measures";
 import { isPresent, type TrackingSeries } from "@/lib/tracking/series";
 
@@ -45,8 +45,8 @@ export function Roster({ series, selectedId, onSelect }: { series: TrackingSerie
                       className={`relative flex h-7 w-full items-center gap-2 rounded-control px-1.5 text-left text-body-2 hover:bg-hover ${sel ? "bg-selected text-fg" : "text-fg-2"}`}
                     >
                       {sel && <span aria-hidden className="absolute top-1 bottom-1 left-0 w-0.5 bg-accent" />}
-                      <span className="num w-8 text-meta text-fg">{t.ref.jersey ? `#${t.ref.jersey}` : "—"}</span>
-                      <span className="truncate">{t.ref.position ?? "Role unavailable"}</span>
+                      <span className="num w-8 shrink-0 text-meta text-fg">{t.ref.jersey ? `#${t.ref.jersey}` : (t.ref.position ?? "—")}</span>
+                      <span className="truncate">{t.ref.jersey ? (t.ref.position ?? "Role unavailable") : (t.ref.name ?? "Name unavailable")}</span>
                     </button>
                   </li>
                 );
@@ -98,6 +98,8 @@ export function PlayInspector({
       </h2>
       <p className="text-caption text-fg-2">
         {sideLabel(track.ref.side)}
+        {track.ref.role ? ` · ${track.ref.role}` : ""}
+        {track.ref.player_to_predict ? " · has held-out future" : ""}
         {track.ref.name ? "" : " · name unavailable"}
       </p>
     </div>
@@ -118,13 +120,59 @@ export function PlayInspector({
               <MetricRow label="Field position" value={detail.yardline_label ?? "—"} missingReason="Not supplied" />
               <MetricRow label="Offense" value={detail.offense ?? "—"} missingReason="Not supplied" />
               <MetricRow label="Defense" value={detail.defense ?? "—"} missingReason="Not supplied" />
-              <MetricRow label="Result" value={outcome(detail.outcome_yards) ?? "—"} missingReason="Not supplied" />
+              <MetricRow label="Formation" value={codeLabel(detail.context.offense_formation) ?? "—"} missingReason="Not supplied" />
+              <MetricRow label="Receiver alignment" value={detail.context.receiver_alignment ?? "—"} missingReason="Not supplied" />
+            </dl>
+          </Section>
+          <Section title="Charted labels">
+            <dl>
               <MetricRow
-                label="Tracking"
+                label="Coverage"
+                value={codeLabel(detail.annotations.coverage_type) ?? "—"}
+                missingReason="Not supplied"
+                definition={`Supplied charting label${detail.annotations.coverage_family ? ` (${codeLabel(detail.annotations.coverage_family)})` : ""}. Describes the play after the fact; not pre-snap information.`}
+              />
+              <MetricRow label="Target route" value={codeLabel(detail.annotations.target_route) ?? "—"} missingReason="Not supplied" definition="Supplied route label of the targeted receiver." />
+              <MetricRow
+                label="Play action"
+                value={detail.annotations.play_action === null ? "—" : detail.annotations.play_action ? "Yes" : "No"}
+                missingReason="Not supplied"
+              />
+              <MetricRow label="Dropback" value={codeLabel(detail.annotations.dropback_type) ?? "—"} missingReason="Not supplied" />
+            </dl>
+          </Section>
+          <Section title="Outcome · post-play">
+            <dl>
+              <MetricRow label="Result" value={playResult(detail.outcome) ?? "—"} missingReason="Not supplied" definition="Supplied pass result and yards gained. Known only after the play." />
+              {detail.outcome.nullified_by_penalty && <MetricRow label="Penalty" value="Play nullified" />}
+            </dl>
+          </Section>
+          <Section title="Tracking">
+            <dl>
+              <MetricRow
+                label="Observed"
                 value={series ? `${series.frameIds.length} frames` : "—"}
                 missingReason="Loading"
-                definition={`${detail.frame_rate_hz} Hz · ${series?.gaps.length ? `${series.gaps.length} gap(s)` : "no gaps"}${series && !series.ball ? " · ball not tracked" : ""}`}
+                definition={`${detail.frame_rate_hz} Hz · ${fixed(detail.tracking.observed_duration_s, 1)} s · ${detail.tracking.player_count} tracked players · ${series?.gaps.length ? `${series.gaps.length} gap(s)` : "no gaps"}${detail.tracking.ball_tracked ? "" : " · ball not tracked"}`}
               />
+              <MetricRow
+                label="Held-out future"
+                value={detail.tracking.future_frame_count ? `${detail.tracking.future_frame_count} frames` : "—"}
+                missingReason="None supplied"
+                definition={
+                  detail.tracking.future_frame_count
+                    ? `Actual positions of ${detail.tracking.predicted_player_count} players for ${fixed(detail.tracking.future_duration_s, 1)} s after the last observed frame, from the dataset's output files. Shown only with the Actual future overlay.`
+                    : undefined
+                }
+              />
+              {detail.ball_landing && (
+                <MetricRow
+                  label="Ball landing"
+                  value={`${fixed(detail.ball_landing.x, 1)}, ${fixed(detail.ball_landing.y, 1)}`}
+                  unit="yd"
+                  definition={`Canonical yards; recorded ${fixed(detail.ball_landing.x_raw, 2)}, ${fixed(detail.ball_landing.y_raw, 2)}.${detail.ball_landing.in_field ? "" : " Outside the field rectangle."} A single supplied point; the ball is not tracked.`}
+                />
+              )}
               <MetricRow label="Dataset" value={detail.provenance.dataset_version} definition={`${detail.provenance.source}. ${detail.provenance.coordinate_convention}.`} />
             </dl>
           </Section>
@@ -205,6 +253,8 @@ function SelectedPlayer({ series, idx, frameIndex, orientation }: { series: Trac
   }
   const flipped = isFlipped(series.direction, orientation);
   const p = toDisplay(t.x[frameIndex], t.y[frameIndex], flipped);
+  const recorded = toRecorded({ x: t.x[frameIndex], y: t.y[frameIndex] }, series.direction);
+  const angle = (v: number) => (Number.isFinite(v) ? angleToDisplay(v, flipped) : NaN);
   const near = nearestOpponent(series, idx, frameIndex);
   const rel = near ? relativeSpeed(series, idx, near.playerIndex, frameIndex) : null;
   const opp = near ? series.tracks[near.playerIndex].ref : null;
@@ -215,10 +265,24 @@ function SelectedPlayer({ series, idx, frameIndex, orientation }: { series: Trac
           label="Position"
           value={`${fixed(p.x, 1)}, ${fixed(p.y, 1)}`}
           unit="yd"
-          definition={`x, y in ${orientation === "normalized" && series.direction ? "direction-normalized" : "source"} field yards. Source: ${fixed(t.x[frameIndex], 2)}, ${fixed(t.y[frameIndex], 2)}.`}
+          definition={`x, y in ${orientation === "normalized" ? "direction-normalized" : "source"} field yards. Canonical ${fixed(t.x[frameIndex], 2)}, ${fixed(t.y[frameIndex], 2)}; recorded ${fixed(recorded.x, 2)}, ${fixed(recorded.y, 2)}.`}
         />
         <MetricRow label="Speed" value={fixed(t.s[frameIndex], 1)} unit="yd/s" missingReason="Not tracked" />
         <MetricRow label="Acceleration" value={fixed(t.a[frameIndex], 1)} unit="yd/s²" missingReason="Not tracked" definition="Tracked acceleration magnitude." />
+        <MetricRow
+          label="Direction"
+          value={fixed(angle(t.dir[frameIndex]), 0)}
+          unit="°"
+          missingReason="Not tracked"
+          definition="Tracked direction of movement in this view: 0° points up the field view (+y), increasing clockwise."
+        />
+        <MetricRow
+          label="Orientation"
+          value={fixed(angle(t.o[frameIndex]), 0)}
+          unit="°"
+          missingReason="Not tracked"
+          definition="Tracked body orientation in this view, same angle convention as direction."
+        />
         <MetricRow
           label={opp ? `Separation from ${playerLabel(opp)}` : "Separation"}
           value={fixed(near?.distance, 1)}

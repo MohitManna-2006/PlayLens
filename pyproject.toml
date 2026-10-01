@@ -3,6 +3,12 @@ name = "playlens-workspace"
 version = "0.1.0"
 description = "PlayLens ML and API Workspace"
 requires-python = ">=3.12"
+# Depending on both members makes a plain `uv sync` install the whole workspace.
+dependencies = ["playlens-api", "playlens-ml"]
+
+[tool.uv.sources]
+playlens-api = { workspace = true }
+playlens-ml = { workspace = true }
 
 [tool.uv.workspace]
 members = [
@@ -20,6 +26,12 @@ select = ["E", "F", "I", "UP"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["ml/tests", "services/api/tests"]
+addopts = "--import-mode=importlib"
+filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
 
 [dependency-groups]
 dev = [

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FieldViewport } from "@/components/field/FieldViewport";
 import { StatusState } from "@/components/ui/StatusState";
 import { errorMessage } from "@/lib/datasource";
-import { downDistance, elapsed, matchup, quarterClock } from "@/lib/format";
+import { codeLabel, downDistance, elapsed, matchup, quarterClock } from "@/lib/format";
 import { usePlayData } from "@/lib/hooks/usePlayData";
 import { Clock, useClockState, useTimeDerived } from "@/lib/replay/clock";
 import { actionExtent, frameIndexAt } from "@/lib/tracking/series";
@@ -46,7 +46,7 @@ export function PlayPreview({
         <div className="min-w-0">
           <h2 className="text-panel font-semibold">{d ? matchup(d) : "Preview"}</h2>
           <p className="num mt-0.5 text-meta text-fg-2">
-            {d ? [quarterClock(d), downDistance(d), d.yardline_label, d.play_id].filter(Boolean).join("   ") : playId}
+            {d ? [quarterClock(d), downDistance(d), d.yardline_label, d.id].filter(Boolean).join("   ") : playId}
           </p>
         </div>
         <button type="button" className="btn btn-quiet btn-icon" aria-label="Close preview" onClick={onClose}>
@@ -54,6 +54,17 @@ export function PlayPreview({
         </button>
       </div>
       {d && <p className="mt-2 text-body-2 text-fg-2">{d.description ?? <span className="text-muted">No supplied description</span>}</p>}
+      {d && (
+        <p className="mt-1 text-caption text-muted">
+          {[
+            codeLabel(d.context.offense_formation),
+            codeLabel(d.annotations.coverage_type),
+            `${d.tracking.observed_frame_count} frames · ${d.tracking.player_count} tracked players`,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      )}
 
       <div className="mt-3 aspect-video w-full">
         {error || seriesError ? (

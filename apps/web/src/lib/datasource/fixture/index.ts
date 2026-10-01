@@ -1,7 +1,8 @@
 /**
- * In-browser implementation of the /api/v1 contract over synthetic plays.
- * Enabled with NEXT_PUBLIC_PLAYLENS_DATA_SOURCE=fixture (the default when no
- * API is configured). See docs/decisions/ADR-0001-web-fixture-data-source.md.
+ * In-browser implementation of the /api/v1 contract over synthetic plays, for
+ * interface development and tests. Enabled only with
+ * NEXT_PUBLIC_PLAYLENS_DATA_SOURCE=fixture; the PlayLens API is the default.
+ * See docs/decisions/ADR-0001-web-fixture-data-source.md and ADR-0002.
  */
 import type {
   CompareResult,
@@ -20,7 +21,6 @@ import type {
   TrajectoryRequest,
 } from "@/lib/contracts";
 import { ApiError, SCHEMA_VERSION } from "@/lib/contracts";
-import { angleToDisplay, isFlipped, toSource } from "@/lib/tracking/geometry";
 import { buildSeries, type TrackingSeries } from "@/lib/tracking/series";
 import type { RawSource } from "../types";
 import {
@@ -43,11 +43,18 @@ import { Rng } from "./random";
 import { FRAME_RATE, GAME_COUNT, PLAYS_PER_GAME, simulate, TEAMS, type SimPlay } from "./simulate";
 
 const DATASET: DatasetStatus = {
-  dataset_version: "fixture-v1",
-  play_count: GAME_COUNT * PLAYS_PER_GAME,
+  dataset: "playlens_fixture",
+  title: "PlayLens procedural fixture",
   source: "PlayLens procedural fixture (synthetic)",
+  subset: null,
+  dataset_version: "fixture-v2",
+  schema_version: SCHEMA_VERSION,
+  play_count: GAME_COUNT * PLAYS_PER_GAME,
   synthetic: true,
+  license_note: "Synthetic plays generated in the browser. Not NFL data.",
+  generated_at: null,
 };
+const COORDINATES = "Canonical yards: x 0–120 including end zones, y 0–53.3, offense attacks +x; angles NGS (0° = +y, clockwise)";
 
 function checkAbort(signal?: AbortSignal) {
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
@@ -67,7 +74,7 @@ export class FixtureSource implements RawSource {
       const out: SimPlay[] = [];
       for (let g = 0; g < GAME_COUNT; g++) for (let s = 1; s <= PLAYS_PER_GAME; s++) out.push(simulate(g, s));
       this.plays = out;
-      for (const p of out) this.byId.set(p.summary.play_id, p);
+      for (const p of out) this.byId.set(p.summary.id, p);
     }
     return this.plays;
   }
@@ -83,21 +90,29 @@ export class FixtureSource implements RawSource {
     const cached = this.details.get(id);
     if (cached) return cached;
     const p = this.play(id);
-    const flipped = isFlipped(p.direction, "normalized");
     const d: PlayDetail = {
       ...p.summary,
       players: p.refs,
       events: p.events.filter((e) => !p.missing.has(e.index)).map((e) => ({ frame_id: e.index + 1, event: e.event })),
       play_direction: p.direction,
-      line_of_scrimmage_x: toSource(p.los, 0, flipped).x,
-      first_down_x: p.firstDown === null ? null : toSource(p.firstDown, 0, flipped).x,
+      line_of_scrimmage_x: p.los,
+      first_down_x: p.firstDown,
       frame_rate_hz: FRAME_RATE,
+      ball_landing: null,
+      coordinates: {
+        system: "playlens-canonical-v1",
+        description: COORDINATES,
+        raw_play_direction: p.direction,
+        raw_transform: p.direction === "left" ? "rotate_180" : "identity",
+      },
       provenance: {
         source: DATASET.source!,
+        dataset: DATASET.dataset!,
         dataset_version: DATASET.dataset_version!,
         schema_version: SCHEMA_VERSION,
-        coordinate_convention: "Source yards: x 0–120 including end zones, y 0–53.3; angles NGS (0° = +y, clockwise)",
+        coordinate_convention: COORDINATES,
         synthetic: true,
+        subset: null,
       },
     };
     this.details.set(id, d);
@@ -108,7 +123,6 @@ export class FixtureSource implements RawSource {
     const cached = this.frames.get(id);
     if (cached) return cached;
     const p = this.play(id);
-    const flipped = isFlipped(p.direction, "normalized");
     const rng = new Rng(p.noiseSeed);
     const dt = 1 / FRAME_RATE;
     const frames: FramesPayload["frames"] = [];
@@ -139,26 +153,34 @@ export class FixtureSource implements RawSource {
         const va = vAt(a2);
         const vb = vAt(b2);
         const acc = Math.hypot(vb.x - va.x, vb.y - va.y) / (((b2 - a2) * dt) || dt);
-        const src = toSource(xs[i] + rng.normal(0, 0.02), ys[i] + rng.normal(0, 0.02), flipped);
         players.push({
           player_id: p.refs[j].player_id,
-          x: round(src.x, 2),
-          y: round(src.y, 2),
+          x: round(xs[i] + rng.normal(0, 0.02), 2),
+          y: round(ys[i] + rng.normal(0, 0.02), 2),
           s: round(s, 2),
           a: round(acc, 2),
-          dir: round(angleToDisplay(lastDir[j], flipped), 1),
-          o: round(angleToDisplay(lastDir[j], flipped), 1),
+          dir: round(lastDir[j], 1),
+          o: round(lastDir[j], 1),
         });
       }
-      const ball = p.special === "no_ball" ? null : toSource(p.ballX[i], p.ballY[i], flipped);
+      const ball = p.special === "no_ball" ? null : { x: p.ballX[i], y: p.ballY[i] };
       frames.push({
         frame_id: i + 1,
+        frame_index: i,
         time_s: round(i * dt, 3),
         ball: ball ? { x: round(ball.x, 2), y: round(ball.y, 2) } : null,
         players,
       });
     }
-    const payload = { play_id: id, frames };
+    const payload: FramesPayload = {
+      id,
+      dataset_version: DATASET.dataset_version!,
+      schema_version: SCHEMA_VERSION,
+      coordinate_system: "playlens-canonical-v1",
+      frame_rate_hz: FRAME_RATE,
+      observed_frame_count: frames.length,
+      frames,
+    };
     this.frames.set(id, payload);
     return payload;
   }
@@ -175,8 +197,8 @@ export class FixtureSource implements RawSource {
     if (!this.descriptors) {
       const raw = new Map<string, Float64Array>();
       for (const p of this.all()) {
-        const v = formationDescriptor(this.series(p.summary.play_id));
-        if (v) raw.set(p.summary.play_id, v);
+        const v = formationDescriptor(this.series(p.summary.id));
+        if (v) raw.set(p.summary.id, v);
       }
       this.descriptors = normalizeCorpus(raw);
     }
@@ -190,13 +212,16 @@ export class FixtureSource implements RawSource {
       .map((p) => p.summary)
       .filter((s) => {
         if (needle) {
-          const hay = [s.play_id, s.game_id, s.home_team, s.away_team, s.offense, s.defense, s.description]
+          const hay = [s.id, s.home_team, s.away_team, s.offense, s.defense, s.description]
             .filter(Boolean)
             .join(" ")
             .toLowerCase();
           if (!hay.includes(needle)) return false;
         }
         if (q.season !== undefined && s.season !== q.season) return false;
+        if (q.week !== undefined && s.week !== q.week) return false;
+        if (q.formation && s.context.offense_formation !== q.formation) return false;
+        if (q.coverage && s.annotations.coverage_type !== q.coverage) return false;
         if (q.offense && s.offense !== q.offense) return false;
         if (q.defense && s.defense !== q.defense) return false;
         if (q.down !== undefined && s.down !== q.down) return false;
@@ -209,7 +234,7 @@ export class FixtureSource implements RawSource {
         if (q.play_type && s.play_type !== q.play_type) return false;
         if (q.quarter !== undefined && s.quarter !== q.quarter) return false;
         if (q.outcome) {
-          const o = s.outcome_yards;
+          const o = s.outcome.yards_gained;
           const band = o === null ? "unknown" : o > 0 ? "gain" : o < 0 ? "loss" : "no_gain";
           if (band !== q.outcome) return false;
         }
@@ -223,12 +248,12 @@ export class FixtureSource implements RawSource {
       const src = index.get(q.similar_to);
       if (!src) throw new ApiError(`Play ${q.similar_to} has no descriptor (no snap event), so similarity is undefined.`, 422, "user");
       const scores: Record<string, number> = {};
-      items = items.filter((s) => s.play_id !== q.similar_to && index.has(s.play_id));
-      for (const s of items) scores[s.play_id] = cosineSimilarity(src, index.get(s.play_id)!);
-      items.sort((a, b) => scores[b.play_id] - scores[a.play_id]);
+      items = items.filter((s) => s.id !== q.similar_to && index.has(s.id));
+      for (const s of items) scores[s.id] = cosineSimilarity(src, index.get(s.id)!);
+      items.sort((a, b) => scores[b.id] - scores[a.id]);
       similarity = { source_play_id: q.similar_to, model_version: DESCRIPTOR_MODEL, scores };
     } else {
-      items.sort((a, b) => (b.game_date ?? "").localeCompare(a.game_date ?? "") || a.play_sequence - b.play_sequence);
+      items.sort((a, b) => (b.game_date ?? "").localeCompare(a.game_date ?? "") || a.play_id - b.play_id);
     }
 
     const total = items.length;
@@ -240,7 +265,7 @@ export class FixtureSource implements RawSource {
       page_size: q.page_size,
       sort: q.sort,
       similarity: similarity
-        ? { ...similarity, scores: Object.fromEntries(items.slice(start, start + q.page_size).map((s) => [s.play_id, similarity!.scores[s.play_id]])) }
+        ? { ...similarity, scores: Object.fromEntries(items.slice(start, start + q.page_size).map((s) => [s.id, similarity!.scores[s.id]])) }
         : null,
       dataset: DATASET,
     };
@@ -250,10 +275,22 @@ export class FixtureSource implements RawSource {
     const all = this.all().map((p) => p.summary);
     return {
       seasons: [...new Set(all.map((s) => s.season).filter((s): s is number => s !== null))].sort((a, b) => b - a),
+      weeks: [...new Set(all.map((s) => s.week).filter((w): w is number => w !== null))].sort((a, b) => a - b),
       teams: [...TEAMS],
+      formations: [],
+      coverages: [],
       play_types: ["pass", "run"],
       quarters: [1, 2, 3, 4],
     };
+  }
+
+  async getDataset(): Promise<DatasetStatus> {
+    return DATASET;
+  }
+
+  async getFuture(id: string): Promise<never> {
+    this.play(id);
+    throw new ApiError("The synthetic fixture has no held-out future trajectories.", null, "unavailable", "not_served");
   }
 
   async getPlay(id: string, signal?: AbortSignal): Promise<PlayDetail> {

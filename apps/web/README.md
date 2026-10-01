@@ -7,40 +7,38 @@ This is the Next.js 16 app that implements `docs/PLAYLENS_DESIGN_BIBLE.md`: Expl
 ```bash
 pnpm install            # from the repo root (pnpm workspace)
 pnpm dev                # http://localhost:3000
-pnpm test               # vitest: geometry, alignment, formatting, contracts, analyst validation
+pnpm test               # vitest: geometry, alignment, formatting, datasource and API contract, analyst validation
 pnpm lint && pnpm typecheck && pnpm build
 ```
 
-Copy `.env.example` to `.env.local` to choose a data source:
+Copy `.env.example` to `.env.local` to configure the data source:
 
 | Variable | Values | Default |
 |---|---|---|
-| `NEXT_PUBLIC_PLAYLENS_DATA_SOURCE` | `fixture` (synthetic plays, in-browser baseline and mock models) or `api` | `fixture` |
-| `NEXT_PUBLIC_API_URL` | Base URL of the FastAPI service | `http://localhost:8000` |
+| `NEXT_PUBLIC_PLAYLENS_DATA_SOURCE` | `api` (PlayLens FastAPI service, real NFL tracking) or `fixture` (synthetic plays, in-browser baseline and mock models) | `api` |
+| `NEXT_PUBLIC_PLAYLENS_API_BASE_URL` | Base URL of the FastAPI service | `http://localhost:8000` |
 
-The fixture is labeled "Synthetic fixture data" in the navigation. Its limits are described in `docs/decisions/ADR-0001-web-fixture-data-source.md`.
+In `api` mode an unreachable API shows an error state; the app never falls back to the fixture. The fixture is labeled "Synthetic fixture data" in the navigation. Its limits are described in `docs/decisions/ADR-0001-web-fixture-data-source.md`.
 
-## API contract expected in `api` mode
+## API contract
 
-`src/lib/contracts.ts` parses every response. A mismatch surfaces as a contract error.
+`src/lib/contracts.ts` mirrors the Pydantic models in `services/api/src/playlens_api/schemas` and parses every response; a mismatch surfaces as a contract error. `src/lib/datasource/contract.test.ts` parses the generated examples in `packages/contracts/examples` and fails if a field is missing, mistyped, or unknown.
+
+Served by the API in Phase 2:
 
 | Method | Path | Returns |
 |---|---|---|
-| GET | `/api/v1/plays?q&season&offense&defense&down&distance&play_type&quarter&outcome&sort&similar_to&page&page_size` | `PlayPage` |
+| GET | `/api/v1/dataset` | `DatasetStatus` |
+| GET | `/api/v1/plays?q&season&week&offense&defense&formation&coverage&down&distance&play_type&quarter&outcome&sort&page&page_size` | `PlayPage` |
 | GET | `/api/v1/plays/facets` | `Facets` |
-| GET | `/api/v1/plays/{id}` | `PlayDetail` |
-| GET | `/api/v1/plays/{id}/frames` | `FramesPayload` (source coordinates, NGS angles) |
-| GET | `/api/v1/models` | `ModelInfo[]` |
-| POST | `/api/v1/search/similar` | `SimilarResult` |
-| POST | `/api/v1/compare` | `CompareResult` |
-| POST | `/api/v1/predict/trajectory` | `TrajectoryPrediction` |
-| GET | `/api/v1/playlab/{id}/config` | `PlayLabConfig` (editable frame, radius, half-plane constraints) |
-| POST | `/api/v1/playlab/counterfactual` | `CounterfactualResult` |
-| GET | `/api/v1/evaluation/summary?model_version=` | `EvaluationReport` |
-| GET | `/api/v1/analyst/status` | `{ available, reason }` |
-| POST | `/api/v1/analyst/respond` | NDJSON stream of `AnalystEvent` (`src/lib/analyst/schema.ts`) |
+| GET | `/api/v1/plays/{id}` | `PlayDetail` (`id` = `"<game_id>-<play_id>"`) |
+| GET | `/api/v1/plays/{id}/frames` | `FramesPayload` (observed frames, canonical coordinates, NGS angles) |
+| GET | `/api/v1/plays/{id}/future` | `FuturePayload` (held-out actual future; ground truth, not a prediction) |
+| GET | `/api/v1/models` | `ModelInfo[]` (empty until a model is trained) |
 
-Errors should use `{ "detail": "..." }`. A 4xx response is shown as a user error and a 5xx response as a server error.
+Errors use `{ "error": { "code", "message", "status", "request_id", "details" } }`. A 4xx response is shown as a user error and a 5xx response as a server error.
+
+Not served yet, so `HttpSource` rejects them as `unavailable` without a request and the screens show unavailable states: similarity search, compare measures, trajectory prediction, PlayLab configuration and counterfactuals, evaluation reports. The Analyst reads `/api/v1/analyst/status` and reports itself unavailable when the route does not exist.
 
 ## Layout of the code
 
@@ -48,7 +46,9 @@ Errors should use `{ "detail": "..." }`. A 4xx response is shown as a user error
 src/app/                   routes: explore, play/[id], compare, playlab/[id], evaluation
 src/lib/contracts.ts       zod schemas for the web ⇄ API contract
 src/lib/datasource/        typed client, HTTP source, synthetic fixture (simulator + baseline/mock models)
-src/lib/tracking/          geometry and direction normalization, series building, deterministic measures
+src/lib/playId.ts          PlayLens play ID format and parsing
+src/lib/play/              forecast helpers, ground truth (actual future, landing spot)
+src/lib/tracking/          geometry and orientation transform over canonical coordinates, series building, deterministic measures
 src/lib/replay/            timestamp-driven replay clock, replay keyboard shortcuts
 src/lib/compare/           snap / recording-start / phase alignment
 src/lib/analyst/           event and generative-UI schemas, session store, transports, local tools

@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "play_not_found",
+    "details": null,
+    "message": "Play 2099090010-999 is not in dataset nfl_bdb_2026_analytics@dev-fa7bb70d2aa3.",
+    "request_id": "example",
+    "status": 404
+  }
+}

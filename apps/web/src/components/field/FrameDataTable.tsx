@@ -71,7 +71,7 @@ export function FrameDataTable({
                 const sel = selectedId === t.ref.player_id;
                 return (
                   <tr key={t.ref.player_id} className={sel ? "bg-selected" : undefined}>
-                    <td className="num text-fg">{t.ref.jersey ? `#${t.ref.jersey}` : t.ref.player_id}</td>
+                    <td className="num text-fg">{t.ref.jersey ? `#${t.ref.jersey}` : (t.ref.name ?? t.ref.player_id)}</td>
                     <td>{t.ref.side === "offense" ? "Offense" : "Defense"}</td>
                     <td>{t.ref.position ?? "Unavailable"}</td>
                     {present ? (

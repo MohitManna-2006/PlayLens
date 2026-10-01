@@ -369,7 +369,7 @@ const MOCK_HORIZON = 3;
 export function playLabConfig(detail: PlayDetail, series: TrackingSeries): PlayLabConfig {
   const bounds = { x_min: 0, x_max: FIELD_LENGTH, y_min: 0, y_max: FIELD_WIDTH };
   const base = {
-    play_id: detail.play_id,
+    play_id: detail.id,
     field_bounds: bounds,
     constraints: [],
     eligible_player_ids: [],

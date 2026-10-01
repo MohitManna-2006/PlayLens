@@ -4,7 +4,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { DistanceBand, Facets, OutcomeFilter, PlayQuery, PlayType } from "@/lib/contracts";
 import { activeFilterCount, DISTANCE_LABELS, OUTCOME_LABELS } from "@/lib/explore/query";
-import { ordinal } from "@/lib/format";
+import { codeLabel, ordinal } from "@/lib/format";
 import { MenuButton, SelectMenu } from "@/components/ui/Menu";
 
 export function SearchFilterBar({
@@ -52,6 +52,14 @@ export function SearchFilterBar({
         options={(facets?.seasons ?? []).map((s) => ({ value: s, label: String(s) }))}
         onChange={(v) => onChange({ season: v })}
       />
+      {facets && facets.weeks.length > 0 && (
+        <SelectMenu<number>
+          label="Week"
+          value={query.week}
+          options={facets.weeks.map((w) => ({ value: w, label: String(w) }))}
+          onChange={(v) => onChange({ week: v })}
+        />
+      )}
       <SelectMenu<string>
         label="Offense"
         value={query.offense}
@@ -90,6 +98,22 @@ export function SearchFilterBar({
           else onChange({ distance: v === "any" ? undefined : (v as DistanceBand) });
         }}
       />
+      {facets && facets.formations.length > 0 && (
+        <SelectMenu<string>
+          label="Formation"
+          value={query.formation}
+          options={facets.formations.map((f) => ({ value: f, label: codeLabel(f) ?? f, hint: f }))}
+          onChange={(v) => onChange({ formation: v })}
+        />
+      )}
+      {facets && facets.coverages.length > 0 && (
+        <SelectMenu<string>
+          label="Coverage"
+          value={query.coverage}
+          options={facets.coverages.map((c) => ({ value: c, label: codeLabel(c) ?? c, hint: `Charted label ${c}` }))}
+          onChange={(v) => onChange({ coverage: v })}
+        />
+      )}
       <SelectMenu<PlayType>
         label="Play type"
         value={query.play_type}
@@ -148,7 +172,7 @@ export function SearchFilterBar({
           id="play-search"
           type="search"
           className="input h-10 pr-9 pl-9"
-          placeholder="Search teams, play descriptions, or play ID"
+          placeholder="Search teams, descriptions, formations, coverages, or play ID"
           value={text}
           autoComplete="off"
           onChange={(e) => {

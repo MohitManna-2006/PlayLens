@@ -17,6 +17,8 @@ import {
   type Point,
   type Viewport,
 } from "@/lib/tracking/geometry";
+import { tokenLabel } from "@/lib/format";
+import type { GroundTruth } from "@/lib/play/groundTruth";
 import { knnGraph, nearestOpponent, trailRange } from "@/lib/tracking/measures";
 import { gapAfter, isPresent, type TrackingSeries } from "@/lib/tracking/series";
 
@@ -41,6 +43,9 @@ export interface OverlayState {
   acceleration: boolean;
   relationship: RelationshipLayer;
   graphAll: boolean;
+  /** Held-out actual future paths (dataset ground truth, never a prediction). */
+  actualFuture: boolean;
+  ballLanding: boolean;
 }
 
 export const DEFAULT_OVERLAYS: OverlayState = {
@@ -49,7 +54,15 @@ export const DEFAULT_OVERLAYS: OverlayState = {
   acceleration: false,
   relationship: "none",
   graphAll: false,
+  actualFuture: false,
+  ballLanding: false,
 };
+
+/**
+ * Ground truth after the observed window (lib/play/groundTruth). Static: it never
+ * animates the replay past its observed frames.
+ */
+export type GroundTruthLayer = GroundTruth;
 
 export interface ForecastLayer {
   playerIndex: number;
@@ -90,6 +103,7 @@ export interface RenderInput {
   overlays: OverlayState;
   forecast: ForecastLayer | null;
   playlab: PlayLabLayer | null;
+  groundTruth: GroundTruthLayer | null;
   fonts: { mono: string; sans: string };
   ended: boolean;
 }
@@ -456,11 +470,11 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
     ctx.restore();
   }
 
-  const drawObservedFuture = (pts: Point[], from: Point) => {
+  const drawObservedFuture = (pts: Point[], from: Point, width = 2) => {
     if (!pts.length) return;
     ctx.save();
     ctx.strokeStyle = C.chalk;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = width;
     ctx.lineJoin = "round";
     polyline(ctx, input, pts, from);
     const end = screen(input, pts[pts.length - 1]);
@@ -486,6 +500,14 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
     ctx.stroke();
     ctx.restore();
   };
+
+  const gt = input.groundTruth;
+  if (gt) {
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    for (const path of gt.paths) drawObservedFuture(path.points, path.from, path.playerIndex === sel ? 2 : 1.5);
+    ctx.restore();
+  }
 
   if (f) {
     if (f.observedFuture) drawObservedFuture(f.observedFuture, f.origin);
@@ -539,6 +561,25 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
   });
 
   /* 6. ball and tokens */
+  if (gt?.landing) {
+    const p = screen(input, gt.landing);
+    ctx.save();
+    ctx.strokeStyle = C.chalk;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([2, 2]);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(p.x - 4, p.y - 4);
+    ctx.lineTo(p.x + 4, p.y + 4);
+    ctx.moveTo(p.x + 4, p.y - 4);
+    ctx.lineTo(p.x - 4, p.y + 4);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   const ball = ballScreenPosition(input);
   if (ball) {
     ctx.save();
@@ -586,10 +627,12 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
       ctx.arc(p.x, p.y, TOKEN_R - 1, 0, Math.PI * 2);
       ctx.stroke();
     }
-    if (t.ref.jersey) {
-      ctx.font = `500 ${t.ref.jersey.length > 2 ? 8 : 10}px ${input.fonts.mono}`;
+    const text = tokenLabel(t.ref);
+    if (text) {
+      const size = t.ref.jersey ? (text.length > 2 ? 8 : 10) : text.length > 2 ? 7 : 8;
+      ctx.font = `500 ${size}px ${input.fonts.mono}`;
       ctx.fillStyle = edited || offense ? C.dark : C.chalk;
-      ctx.fillText(t.ref.jersey, p.x, p.y + 0.5);
+      ctx.fillText(text, p.x, p.y + 0.5);
     }
   });
 
@@ -627,6 +670,10 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
 
   /* 8. labels */
   drawScrimmageLabels(ctx, input);
+  if (gt?.landing) {
+    const p = screen(input, gt.landing);
+    labelBox(ctx, input, "Landing", p.x + 10, p.y - 8, C.chalk, 11);
+  }
   if (nearestLabel) labelBox(ctx, input, nearestLabel.text, nearestLabel.x, nearestLabel.y, C.chalk, 12);
   if (f && f.path.length) {
     const pts = validPrefix(f.path, f.valid);
@@ -658,7 +705,7 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
     const p = pos[j];
     if (!p) return;
     const r = s.tracks[j].ref;
-    const text = [r.jersey ? `#${r.jersey}` : null, r.position].filter(Boolean).join(" ") || r.player_id;
+    const text = [r.jersey ? `#${r.jersey}` : null, r.position, r.name].filter(Boolean).join(" ") || r.player_id;
     labelBox(ctx, input, text, p.x + 14, p.y - 26, color, 12);
   };
   if (input.hovered !== null && input.hovered !== sel) labelFor(input.hovered, C.chalk);

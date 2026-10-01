@@ -6,12 +6,21 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { AnalystPane } from "@/components/analyst/AnalystPane";
-import { changeOverlay, FieldLegend, overlayLegend, OverlayControl, TOKEN_LEGEND, ViewMenu, type ViewMode } from "@/components/field/FieldControls";
+import {
+  changeOverlay,
+  FieldLegend,
+  overlayLegend,
+  OverlayControl,
+  tokenLegend,
+  ViewMenu,
+  type GroundTruthAvailability,
+  type ViewMode,
+} from "@/components/field/FieldControls";
 import { FrameLabel, OrientationLabel, STAGE_HEIGHT, StageLegend, StageNote, StagePlaceholder } from "@/components/field/FieldStage";
 import { FieldViewport } from "@/components/field/FieldViewport";
 import { StageBoundary } from "@/components/field/StageBoundary";
 import { FrameDataTable } from "@/components/field/FrameDataTable";
-import { DEFAULT_OVERLAYS, type ForecastLayer, type OverlayState } from "@/components/field/renderer";
+import { DEFAULT_OVERLAYS, type ForecastLayer, type GroundTruthLayer, type OverlayState } from "@/components/field/renderer";
 import { ReplayDock, type TimeOrigin } from "@/components/replay/ReplayDock";
 import type { TimelineLane, TimelineMarker } from "@/components/replay/Timeline";
 import { useAnalystStore } from "@/components/shell/Providers";
@@ -22,12 +31,15 @@ import { StatusState } from "@/components/ui/StatusState";
 import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import type { AnalystAction } from "@/lib/analyst/schema";
 import { useAnalystState, type ActionOutcome } from "@/lib/analyst/store";
+import { ApiError } from "@/lib/contracts";
 import { errorMessage, getClient } from "@/lib/datasource";
-import { downDistance, elapsed, matchup, playerLabel, quarterClock } from "@/lib/format";
+import { downDistance, elapsed, fixed, matchup, playerLabel, quarterClock } from "@/lib/format";
 import { atLeast, useBreakpoint } from "@/lib/hooks/useBreakpoint";
 import { pushRecent } from "@/lib/hooks/recent";
-import { usePlayData } from "@/lib/hooks/usePlayData";
+import { usePlayData, usePlayFuture } from "@/lib/hooks/usePlayData";
+import { parsePlayId } from "@/lib/playId";
 import { observedFuture, predictedAt } from "@/lib/play/forecast";
+import { buildGroundTruth } from "@/lib/play/groundTruth";
 import { Clock, useTimeDerived, type TimeSource } from "@/lib/replay/clock";
 import { handleReplayKey } from "@/lib/replay/keys";
 import { FULL_FIELD, type Orientation } from "@/lib/tracking/geometry";
@@ -64,9 +76,16 @@ export function timeOrigin(series: TrackingSeries): TimeOrigin {
 export function PlayWorkspace({ playId }: { playId: string }) {
   const client = getClient();
   const params = useSearchParams();
-  const { detail, frames, series, seriesError } = usePlayData(playId);
+  const validId = parsePlayId(playId) !== null;
+  const { detail, frames, series, seriesError } = usePlayData(validId ? playId : null);
   const models = useQuery({ queryKey: ["models"], queryFn: ({ signal }) => client.listModels(signal) });
-  const labConfig = useQuery({ queryKey: ["playlab-config", playId], queryFn: ({ signal }) => client.getPlayLabConfig(playId, signal) });
+  const served = (task: "trajectory" | "retrieval" | "counterfactual") => models.data?.find((m) => m.task === task && m.served) ?? null;
+  // PlayLab configuration exists only for a served counterfactual model.
+  const labConfig = useQuery({
+    queryKey: ["playlab-config", playId],
+    queryFn: ({ signal }) => client.getPlayLabConfig(playId, signal),
+    enabled: !!served("counterfactual"),
+  });
   const bp = useBreakpoint();
   const wide = atLeast(bp, "xl");
   const analyst = useAnalystStore();
@@ -117,7 +136,8 @@ export function PlayWorkspace({ playId }: { playId: string }) {
   }, [series, view, orientation, framingIndex]);
 
   const selIndex = series && selectedId ? series.tracks.findIndex((t) => t.ref.player_id === selectedId) : -1;
-  const trajModel = models.data?.find((m) => m.task === "trajectory" && m.served) ?? null;
+  const trajModel = served("trajectory");
+  const future = usePlayFuture(detail.data, overlays.actualFuture);
   const pinned = forecast.pinned;
   const inReview = !!pinned && pinned.status === "ready" && frameIndex >= pinned.originIndex;
 
@@ -210,6 +230,35 @@ export function PlayWorkspace({ playId }: { playId: string }) {
     };
   }, [series, forecast, inReview, pinned, selIndex, selectedId]);
 
+  /* ---- ground truth after the observed window ---- */
+  const groundTruth: GroundTruthLayer | null = useMemo(
+    () => (series ? buildGroundTruth(series, detail.data, future.data, { future: overlays.actualFuture, landing: overlays.ballLanding }) : null),
+    [series, detail.data, overlays.actualFuture, overlays.ballLanding, future.data],
+  );
+
+  const groundTruthAvailability: GroundTruthAvailability | undefined = detail.data
+    ? {
+        futureReason:
+          detail.data.tracking.future_frame_count === 0 || detail.data.tracking.predicted_player_count === 0
+            ? "No held-out future is supplied for this play"
+            : future.isError
+              ? `Could not load: ${errorMessage(future.error)}`
+              : null,
+        futureHint: `Held-out positions from the dataset's output files: ${detail.data.tracking.predicted_player_count} players over ${fixed(detail.data.tracking.future_duration_s, 1)} s after the last observed frame. Ground truth, not a prediction.`,
+        landingReason: detail.data.ball_landing ? null : "No landing point is supplied for this play",
+      }
+    : undefined;
+
+  const similarUnavailable = models.isError
+    ? `The model list could not be loaded: ${errorMessage(models.error)}`
+    : !models.data
+      ? null
+      : !served("retrieval")
+        ? "No retrieval model is served yet. Similar plays need a trained play embedding."
+        : series && series.snapIndex === null
+          ? "This play has no snap event, so the retrieval descriptor is undefined."
+          : null;
+
   /* ---- announcements for user seeks ---- */
   const seekTimer = useRef<number | null>(null);
   const announceFrame = useCallback(() => {
@@ -299,19 +348,22 @@ export function PlayWorkspace({ playId }: { playId: string }) {
   /* ---- render ---- */
   const d = detail.data;
   const loadError = detail.error ?? frames.error;
-  if (detail.isError && (detail.error as { status?: number } | null)?.status === 404) {
+  const notFound = detail.isError && detail.error instanceof ApiError && detail.error.status === 404;
+  if (!validId || notFound) {
     return (
       <div className="mx-auto max-w-[680px] px-[var(--page-pad)] py-12">
         <StatusState
           kind="empty"
-          title={`Play ${playId} was not found`}
+          title={validId ? `Play ${playId} was not found` : `${playId} is not a PlayLens play ID`}
           action={
             <Link href="/explore" className="btn">
               Back to Explore
             </Link>
           }
         >
-          The play ID does not exist in the current dataset.
+          {validId
+            ? "The play ID does not exist in the current dataset."
+            : "Play IDs combine the game and play numbers, for example 2023091008-3826."}
         </StatusState>
       </div>
     );
@@ -423,6 +475,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
       ]
     : [];
   const legend = overlayLegend(overlays, legendExtra);
+  const tokens = tokenLegend(!series || !!series.ball);
   const modeLabel = inReview ? "Forecast review" : "Observed replay";
 
   return (
@@ -439,7 +492,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
                 quarterClock(d) ?? "Clock unavailable",
                 downDistance(d) ?? "Down unavailable",
                 d.yardline_label ?? "Field position unavailable",
-                <Identifier key="id" value={d.play_id} label="Play ID" />,
+                <Identifier key="id" value={d.id} label="Play ID" />,
               ]
         }
         actions={
@@ -505,10 +558,11 @@ export function PlayWorkspace({ playId }: { playId: string }) {
                 setForecast((f) => ({ ...f, enabled: v }));
               }}
               predictedDisabledReason={trajModel ? null : "No trajectory model is served"}
+              groundTruth={groundTruthAvailability}
             />
             <div className="ml-auto flex min-w-0 items-center gap-3">
               {atLeast(bp, "lg") ? (
-                <FieldLegend items={TOKEN_LEGEND} className="flex-nowrap justify-end" />
+                <FieldLegend items={tokens} className="flex-nowrap justify-end" />
               ) : (
                 <Popover
                   label="Legend"
@@ -521,7 +575,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
                     </button>
                   )}
                 >
-                  {() => <FieldLegend items={TOKEN_LEGEND} className="flex-col items-start" />}
+                  {() => <FieldLegend items={tokens} className="flex-col items-start" />}
                 </Popover>
               )}
               <span className={`shrink-0 text-caption ${inReview ? "text-accent" : "text-fg-2"}`} aria-live="polite">
@@ -562,6 +616,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
                   overlays={overlays}
                   selectedId={selectedId}
                   forecast={forecastLayer}
+                  groundTruth={groundTruth}
                   onSelect={(id) => select(id)}
                   label={`Football field replay for play ${playId}. ${series.tracks.length} tracked players. Use the roster or frame data table to select players.`}
                   className="h-full w-full"
@@ -570,7 +625,15 @@ export function PlayWorkspace({ playId }: { playId: string }) {
                     <>
                       <OrientationLabel series={series} orientation={orientation} />
                       <FrameLabel series={series} time={clock} origin={origin?.time ?? null} />
-                      {!series.ball && <StageNote>Ball not tracked in this play</StageNote>}
+                      {!series.ball && (
+                        <StageNote>
+                          {overlays.actualFuture && future.isFetching
+                            ? "Loading actual future"
+                            : overlays.ballLanding && groundTruth?.landing
+                              ? "Ball not tracked · landing spot shown"
+                              : "Ball not tracked in this play"}
+                        </StageNote>
+                      )}
                       {legend.length > 0 && (
                         <StageLegend>
                           <FieldLegend items={legend} className="justify-end" />
@@ -622,7 +685,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
           items={stripItems}
         />
       )}
-      <SimilarPlays playId={playId} unavailableReason={series && series.snapIndex === null ? "This play has no snap event, so the retrieval descriptor is undefined." : null} />
+      <SimilarPlays playId={playId} unavailableReason={similarUnavailable} />
       {series && clock && (
         <FrameDataTable series={series} time={clock} orientation={orientation} selectedId={selectedId} onSelect={(id) => select(id)} />
       )}

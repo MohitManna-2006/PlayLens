@@ -65,6 +65,28 @@ export function outcome(yds: number | null): string | null {
   return `${signed(yds, 0)} yd`;
 }
 
+/** Supplied dataset codes (pass_result). Unknown codes are shown as supplied. */
+const PASS_RESULTS: Record<string, string> = { C: "Complete", I: "Incomplete", IN: "Intercepted" };
+
+export function passResult(code: string | null): string | null {
+  return code === null ? null : (PASS_RESULTS[code] ?? code);
+}
+
+/** Result line for a play: "Complete · +18 yd", "Incomplete", or null when nothing was supplied. */
+export function playResult(o: { pass_result: string | null; yards_gained: number | null }): string | null {
+  const r = passResult(o.pass_result);
+  const y = o.pass_result === "C" || r === null ? outcome(o.yards_gained) : null;
+  return [r, y].filter(Boolean).join(" · ") || null;
+}
+
+/** Dataset label codes for display: "COVER_3_ZONE" → "Cover 3 zone", "I_FORM" → "I form". Codes like "3x1" are kept. */
+export function codeLabel(code: string | null | undefined): string | null {
+  if (!code) return null;
+  if (!/^[A-Z0-9_]+$/.test(code)) return code;
+  const words = code.toLowerCase().split("_");
+  return [words[0].charAt(0).toUpperCase() + words[0].slice(1), ...words.slice(1)].join(" ");
+}
+
 export function matchup(p: Pick<PlaySummary, "away_team" | "home_team">): string {
   return `${p.away_team} at ${p.home_team}`;
 }
@@ -72,6 +94,11 @@ export function matchup(p: Pick<PlaySummary, "away_team" | "home_team">): string
 export function playerLabel(ref: { jersey: string | null; name: string | null; position: string | null }): string {
   const parts = [ref.jersey ? `#${ref.jersey}` : null, ref.name].filter(Boolean);
   return parts.length ? parts.join(" ") : "Unidentified player";
+}
+
+/** Short on-field label: jersey when supplied, otherwise position (real tracking has no jersey numbers). */
+export function tokenLabel(ref: { jersey: string | null; position: string | null }): string | null {
+  return ref.jersey ?? ref.position ?? null;
 }
 
 export function sideLabel(side: "offense" | "defense"): string {

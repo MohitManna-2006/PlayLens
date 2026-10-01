@@ -1,0 +1,177 @@
+{
+  "coordinate_system": "playlens-canonical-v1",
+  "dataset_version": "nfl_bdb_2026_analytics@dev-fa7bb70d2aa3",
+  "description": "Held-out ground-truth positions after the observed window, from the dataset's output files. Available only for players flagged player_to_predict. This is not a model prediction.",
+  "frame_rate_hz": 10.0,
+  "horizon_frames": 7,
+  "horizon_s": 0.7,
+  "id": "2099090011-101",
+  "kind": "actual_future",
+  "origin_frame_id": 23,
+  "origin_time_s": 2.2,
+  "schema_version": "2",
+  "trajectories": [
+    {
+      "player_id": "1004",
+      "points": [
+        {
+          "frame_id": 1,
+          "frame_index": 23,
+          "time_s": 2.3,
+          "x": 33.99,
+          "y": 15.08
+        },
+        {
+          "frame_id": 2,
+          "frame_index": 24,
+          "time_s": 2.4,
+          "x": 34.12,
+          "y": 15.04
+        },
+        {
+          "frame_id": 3,
+          "frame_index": 25,
+          "time_s": 2.5,
+          "x": 34.25,
+          "y": 15.0
+        },
+        {
+          "frame_id": 4,
+          "frame_index": 26,
+          "time_s": 2.6,
+          "x": 34.38,
+          "y": 14.96
+        },
+        {
+          "frame_id": 5,
+          "frame_index": 27,
+          "time_s": 2.7,
+          "x": 34.51,
+          "y": 14.92
+        },
+        {
+          "frame_id": 6,
+          "frame_index": 28,
+          "time_s": 2.8,
+          "x": 34.64,
+          "y": 14.88
+        },
+        {
+          "frame_id": 7,
+          "frame_index": 29,
+          "time_s": 2.9,
+          "x": 34.77,
+          "y": 14.84
+        }
+      ]
+    },
+    {
+      "player_id": "2003",
+      "points": [
+        {
+          "frame_id": 1,
+          "frame_index": 23,
+          "time_s": 2.3,
+          "x": 37.31,
+          "y": 12.07
+        },
+        {
+          "frame_id": 2,
+          "frame_index": 24,
+          "time_s": 2.4,
+          "x": 37.28,
+          "y": 12.16
+        },
+        {
+          "frame_id": 3,
+          "frame_index": 25,
+          "time_s": 2.5,
+          "x": 37.25,
+          "y": 12.25
+        },
+        {
+          "frame_id": 4,
+          "frame_index": 26,
+          "time_s": 2.6,
+          "x": 37.22,
+          "y": 12.34
+        },
+        {
+          "frame_id": 5,
+          "frame_index": 27,
+          "time_s": 2.7,
+          "x": 37.19,
+          "y": 12.43
+        },
+        {
+          "frame_id": 6,
+          "frame_index": 28,
+          "time_s": 2.8,
+          "x": 37.16,
+          "y": 12.52
+        },
+        {
+          "frame_id": 7,
+          "frame_index": 29,
+          "time_s": 2.9,
+          "x": 37.13,
+          "y": 12.61
+        }
+      ]
+    },
+    {
+      "player_id": "2004",
+      "points": [
+        {
+          "frame_id": 1,
+          "frame_index": 23,
+          "time_s": 2.3,
+          "x": 40.69,
+          "y": 17.38
+        },
+        {
+          "frame_id": 2,
+          "frame_index": 24,
+          "time_s": 2.4,
+          "x": 40.72,
+          "y": 17.44
+        },
+        {
+          "frame_id": 3,
+          "frame_index": 25,
+          "time_s": 2.5,
+          "x": 40.75,
+          "y": 17.5
+        },
+        {
+          "frame_id": 4,
+          "frame_index": 26,
+          "time_s": 2.6,
+          "x": 40.78,
+          "y": 17.56
+        },
+        {
+          "frame_id": 5,
+          "frame_index": 27,
+          "time_s": 2.7,
+          "x": 40.81,
+          "y": 17.62
+        },
+        {
+          "frame_id": 6,
+          "frame_index": 28,
+          "time_s": 2.8,
+          "x": 40.84,
+          "y": 17.68
+        },
+        {
+          "frame_id": 7,
+          "frame_index": 29,
+          "time_s": 2.9,
+          "x": 40.87,
+          "y": 17.74
+        }
+      ]
+    }
+  ]
+}

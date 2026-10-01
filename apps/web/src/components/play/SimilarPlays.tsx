@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { StatusState } from "@/components/ui/StatusState";
 import { cosine, ms } from "@/lib/format";
+import { isUnavailable } from "@/lib/contracts";
 import { errorMessage, getClient } from "@/lib/datasource";
 
 /**
@@ -54,6 +55,10 @@ export function SimilarPlays({ playId, unavailableReason }: { playId: string; un
             </li>
           ))}
         </ul>
+      ) : q.isError && isUnavailable(q.error) ? (
+        <StatusState kind="unavailable" title="Similarity unavailable">
+          {errorMessage(q.error)}
+        </StatusState>
       ) : q.isError ? (
         <StatusState
           kind="error"
@@ -80,21 +85,21 @@ export function SimilarPlays({ playId, unavailableReason }: { playId: string; un
           </p>
           <ol className="mt-2">
             {q.data.results.map((r) => (
-              <li key={r.play.play_id} className="flex h-12 items-center gap-4 border-b border-border">
+              <li key={r.play.id} className="flex h-12 items-center gap-4 border-b border-border">
                 <span className="num w-4 text-meta text-muted">{r.rank}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-body-2 font-medium text-fg">
                     {r.play.away_team} at {r.play.home_team}
-                    <span className="num ml-2 text-meta font-normal text-muted">{r.play.play_id}</span>
+                    <span className="num ml-2 text-meta font-normal text-muted">{r.play.id}</span>
                   </p>
                   <p className="truncate text-caption text-fg-2">{r.play.description ?? "No supplied description"}</p>
                 </div>
                 <span className="num text-meta text-fg">Cosine {cosine(r.score)}</span>
-                <Link href={`/play/${encodeURIComponent(r.play.play_id)}`} className="btn btn-quiet btn-sm">
+                <Link href={`/play/${encodeURIComponent(r.play.id)}`} className="btn btn-quiet btn-sm">
                   Open
                 </Link>
                 <Link
-                  href={`/compare?left=${encodeURIComponent(playId)}&right=${encodeURIComponent(r.play.play_id)}`}
+                  href={`/compare?left=${encodeURIComponent(playId)}&right=${encodeURIComponent(r.play.id)}`}
                   className="btn btn-quiet btn-sm"
                 >
                   Compare

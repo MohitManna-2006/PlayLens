@@ -26,6 +26,7 @@ export interface PlayerTrack {
   s: Float64Array;
   a: Float64Array;
   dir: Float64Array;
+  o: Float64Array;
 }
 
 export interface Gap {
@@ -80,12 +81,16 @@ export function describeEvent(code: string): { label: string; kind: EventKind } 
 }
 
 export function buildSeries(detail: PlayDetail, payload: FramesPayload): TrackingSeries {
+  if (payload.id !== detail.id) {
+    throw new ApiError(`Frames for play ${payload.id} were returned for play ${detail.id}.`, null, "contract");
+  }
   const frames = [...payload.frames].sort((a, b) => a.frame_id - b.frame_id);
   for (let i = 1; i < frames.length; i++) {
     if (frames[i].frame_id === frames[i - 1].frame_id) {
-      throw new ApiError(`Duplicate frame ${frames[i].frame_id} in play ${detail.play_id}`, null, "contract");
+      throw new ApiError(`Duplicate frame ${frames[i].frame_id} in play ${detail.id}`, null, "contract");
     }
   }
+  if (frames.length === 0) throw new ApiError(`Play ${detail.id} has no tracking frames.`, null, "contract");
   const n = frames.length;
   const frameIds = frames.map((f) => f.frame_id);
   const times = frames.map((f) => f.time_s);
@@ -97,6 +102,7 @@ export function buildSeries(detail: PlayDetail, payload: FramesPayload): Trackin
     s: new Float64Array(n).fill(NaN),
     a: new Float64Array(n).fill(NaN),
     dir: new Float64Array(n).fill(NaN),
+    o: new Float64Array(n).fill(NaN),
   }));
   const byId = new Map(tracks.map((t, i) => [t.ref.player_id, i]));
 
@@ -112,13 +118,16 @@ export function buildSeries(detail: PlayDetail, payload: FramesPayload): Trackin
     }
     for (const p of frame.players) {
       const ti = byId.get(p.player_id);
-      if (ti === undefined) continue;
+      if (ti === undefined) {
+        throw new ApiError(`Frame ${frame.frame_id} of play ${detail.id} has player ${p.player_id}, who is not in the roster.`, null, "contract");
+      }
       const t = tracks[ti];
       t.x[i] = p.x;
       t.y[i] = p.y;
       t.s[i] = p.s ?? NaN;
       t.a[i] = p.a ?? NaN;
       t.dir[i] = p.dir ?? NaN;
+      t.o[i] = p.o ?? NaN;
     }
   });
 
@@ -151,7 +160,7 @@ export function buildSeries(detail: PlayDetail, payload: FramesPayload): Trackin
   const snap = events.find((e) => e.kind === "snap");
 
   return {
-    playId: detail.play_id,
+    playId: detail.id,
     direction: detail.play_direction,
     frameRate: detail.frame_rate_hz,
     frameIds,

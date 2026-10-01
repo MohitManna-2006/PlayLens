@@ -7,10 +7,12 @@
  * fixed seed, players carry no names, and every surface that shows this data
  * is labeled "Synthetic fixture".
  *
- * Simulation runs in normalized coordinates (offense attacks +x) and is
- * converted to source coordinates per play direction afterwards.
+ * Simulation runs in canonical coordinates (offense attacks +x), the same frame
+ * the API serves. Each play still gets a recorded direction so the Source view
+ * has something to undo.
  */
 import type { PlayDirection, PlayerRef, PlaySummary, PlayType } from "@/lib/contracts";
+import { formatPlayId } from "@/lib/playId";
 import { FIELD_LENGTH, FIELD_WIDTH } from "@/lib/tracking/geometry";
 import { hashString, Rng } from "./random";
 
@@ -87,10 +89,13 @@ function roster(teamIndex: number): Roster {
       slot,
       ref: {
         player_id: `${TEAM_CODES[teamIndex]}-${n}`,
+        nfl_id: null,
         jersey: String(n),
         name: null,
         side,
         position: slot.position,
+        role: null,
+        player_to_predict: false,
       },
     };
   };
@@ -315,7 +320,13 @@ function pad(n: number, w: number) {
   return String(n).padStart(w, "0");
 }
 
+/** Synthetic games are numbered 1..GAME_COUNT and plays 1..PLAYS_PER_GAME; no NFL ID looks like this. */
 export function fixturePlayId(gameIndex: number, seq: number) {
+  return formatPlayId(gameIndex + 1, seq);
+}
+
+/** Seeds keep the Phase 1 key so every synthetic play is unchanged. */
+function seedKey(gameIndex: number, seq: number) {
   return `fx${pad(gameIndex + 1, 2)}-${pad(seq, 3)}`;
 }
 
@@ -328,7 +339,7 @@ export function simulate(gameIndex: number, seq: number): SimPlay {
   const game = GAMES[gameIndex];
   const index = gameIndex * PLAYS_PER_GAME + (seq - 1);
   const playId = fixturePlayId(gameIndex, seq);
-  const rng = new Rng(hashString(`play:${playId}`));
+  const rng = new Rng(hashString(`play:${seedKey(gameIndex, seq)}`));
   const special = gameIndex === SPECIAL_GAME ? (SPECIALS[seq] ?? null) : null;
 
   const offenseIsHome = rng.chance(0.5);
@@ -660,13 +671,23 @@ export function simulate(gameIndex: number, seq: number): SimPlay {
 
   const yardline = fromGoal === 50 ? "50" : fromGoal < 50 ? `${offense} ${fromGoal}` : `${defense} ${100 - fromGoal}`;
 
+  const missing = new Set<number>();
+  if (special === "gap") for (let i = snapIdx + 18; i <= snapIdx + 22 && i < totalFrames; i++) missing.add(i);
+  const dropout = new Map<number, number>();
+  if (special === "dropout") {
+    const cb2 = bodies.findIndex((b) => b.entry.slot.key === "CB2");
+    dropout.set(cb2, Math.min(totalFrames - 1, snapIdx + 25));
+  }
+
+  const observed = totalFrames - missing.size;
+  const refs = bodies.map((b) => b.entry.ref);
   const summary: PlaySummary = {
-    play_id: playId,
-    game_id: `fx-g${pad(gameIndex + 1, 2)}`,
+    id: playId,
+    game_id: gameIndex + 1,
+    play_id: seq,
     season: game.season,
     week: game.week,
     game_date: game.date,
-    play_sequence: seq,
     home_team: TEAMS[game.home],
     away_team: TEAMS[game.away],
     offense,
@@ -678,16 +699,51 @@ export function simulate(gameIndex: number, seq: number): SimPlay {
     yardline_label: yardline,
     play_type: playType,
     description,
-    outcome_yards: outcomeYards,
+    // The simulator models movement only; it invents no formation, coverage, or charting labels.
+    context: {
+      offense_formation: null,
+      receiver_alignment: null,
+      defenders_in_the_box: null,
+      home_score: null,
+      visitor_score: null,
+      home_win_probability: null,
+      visitor_win_probability: null,
+      expected_points: null,
+    },
+    annotations: {
+      coverage_family: null,
+      coverage_type: null,
+      target_route: null,
+      play_action: null,
+      dropback_type: null,
+      dropback_distance: null,
+      pass_location_type: null,
+    },
+    outcome: {
+      pass_result: playType === "pass" && special !== "no_description" ? (caught ? "C" : "I") : null,
+      pass_length: null,
+      yards_gained: outcomeYards,
+      pre_penalty_yards_gained: null,
+      penalty_yards: null,
+      nullified_by_penalty: null,
+      expected_points_added: null,
+      home_win_probability_added: null,
+      visitor_win_probability_added: null,
+    },
+    tracking: {
+      observed_frame_count: observed,
+      observed_duration_s: Math.round((totalFrames - 1) * DT * 1000) / 1000,
+      first_frame_id: 1,
+      last_frame_id: totalFrames,
+      player_count: refs.length,
+      offense_player_count: refs.filter((r) => r.side === "offense").length,
+      defense_player_count: refs.filter((r) => r.side === "defense").length,
+      predicted_player_count: 0,
+      future_frame_count: 0,
+      future_duration_s: 0,
+      ball_tracked: special !== "no_ball",
+    },
   };
-
-  const missing = new Set<number>();
-  if (special === "gap") for (let i = snapIdx + 18; i <= snapIdx + 22 && i < totalFrames; i++) missing.add(i);
-  const dropout = new Map<number, number>();
-  if (special === "dropout") {
-    const cb2 = bodies.findIndex((b) => b.entry.slot.key === "CB2");
-    dropout.set(cb2, Math.min(totalFrames - 1, snapIdx + 25));
-  }
 
   return {
     index,
@@ -699,7 +755,7 @@ export function simulate(gameIndex: number, seq: number): SimPlay {
     frameCount: totalFrames,
     snapIndex: snapIdx,
     events,
-    refs: bodies.map((b) => b.entry.ref),
+    refs,
     roles: bodies.map((b) => b.entry.slot.role),
     xs: bodies.map((b) => b.xs),
     ys: bodies.map((b) => b.ys),
@@ -708,7 +764,7 @@ export function simulate(gameIndex: number, seq: number): SimPlay {
     special,
     missing,
     dropout,
-    noiseSeed: hashString(`noise:${playId}`),
+    noiseSeed: hashString(`noise:${seedKey(gameIndex, seq)}`),
   };
 }
 

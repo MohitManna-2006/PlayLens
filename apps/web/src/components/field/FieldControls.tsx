@@ -85,7 +85,16 @@ export function overlaySummary(o: OverlayState, predicted: boolean): string[] {
   if (o.acceleration) out.push("Acceleration");
   if (o.relationship !== "none") out.push(relLabel(o.relationship));
   if (predicted) out.push("Predicted path");
+  if (o.actualFuture) out.push("Actual future");
+  if (o.ballLanding) out.push("Landing spot");
   return out;
+}
+
+/** What the dataset supplies after the observed window; null reasons mean available. */
+export interface GroundTruthAvailability {
+  futureReason: string | null;
+  futureHint: string;
+  landingReason: string | null;
 }
 
 function Check({
@@ -132,6 +141,7 @@ export function OverlayControl({
   predicted,
   onPredicted,
   predictedDisabledReason,
+  groundTruth,
   hasSelection,
 }: {
   overlays: OverlayState;
@@ -139,6 +149,7 @@ export function OverlayControl({
   predicted?: boolean;
   onPredicted?: (v: boolean) => void;
   predictedDisabledReason?: string | null;
+  groundTruth?: GroundTruthAvailability;
   hasSelection: boolean;
 }) {
   const summary = overlaySummary(overlays, !!predicted);
@@ -200,6 +211,25 @@ export function OverlayControl({
               <Check indent label="All players" hint="Advanced: show every edge at reduced opacity" checked={overlays.graphAll} onChange={(v) => onChange({ graphAll: v })} />
             )}
           </fieldset>
+          {groundTruth && (
+            <fieldset className="border-t border-border pt-2">
+              <legend className="px-2 pt-1 pb-1 text-caption text-muted">After the observed window · ground truth</legend>
+              <Check
+                label="Actual future paths"
+                hint={groundTruth.futureReason ?? groundTruth.futureHint}
+                checked={overlays.actualFuture}
+                disabled={!!groundTruth.futureReason && !overlays.actualFuture}
+                onChange={(v) => onChange({ actualFuture: v })}
+              />
+              <Check
+                label="Ball landing spot"
+                hint={groundTruth.landingReason ?? "Supplied landing point of the pass. The ball itself is not tracked frame by frame."}
+                checked={overlays.ballLanding}
+                disabled={!!groundTruth.landingReason && !overlays.ballLanding}
+                onChange={(v) => onChange({ ballLanding: v })}
+              />
+            </fieldset>
+          )}
           {onPredicted && (
             <fieldset className="border-t border-border pt-2">
               <legend className="px-2 pt-1 pb-1 text-caption text-muted">Forecast</legend>
@@ -294,6 +324,13 @@ function Sample({ kind }: { kind: string }) {
           <rect x="15" y="2.5" width="7" height="7" fill="#F2F4F5" />
         </svg>
       );
+    case "landing":
+      return (
+        <svg {...common}>
+          <circle cx="11" cy="6" r="4.5" fill="none" stroke="#F2F4F5" strokeWidth="1.2" strokeDasharray="1.5 1.5" />
+          <path d="M8.5 3.5 L13.5 8.5 M13.5 3.5 L8.5 8.5" stroke="#F2F4F5" strokeWidth="1.2" />
+        </svg>
+      );
     case "samples":
       return (
         <svg {...common}>
@@ -343,6 +380,11 @@ export const TOKEN_LEGEND: LegendItem[] = [
   { kind: "ball", label: "Ball" },
 ];
 
+/** Token legend; the ball entry appears only when frame-level ball positions exist. */
+export function tokenLegend(hasBall: boolean): LegendItem[] {
+  return hasBall ? TOKEN_LEGEND : TOKEN_LEGEND.filter((i) => i.kind !== "ball");
+}
+
 /** Analytical overlay legend; shown whenever an overlay is active (§12). */
 export function overlayLegend(o: OverlayState, extra: LegendItem[] = []): LegendItem[] {
   const items: LegendItem[] = [];
@@ -351,5 +393,7 @@ export function overlayLegend(o: OverlayState, extra: LegendItem[] = []): Legend
   if (o.acceleration) items.push({ kind: "acceleration", label: "Accel. yd/s²" });
   if (o.relationship === "nearest_opponent") items.push({ kind: "nearest", label: "Nearest opponent" });
   if (o.relationship === "interaction_graph") items.push({ kind: "graph", label: "3-NN graph" });
+  if (o.actualFuture) items.push({ kind: "observed", label: "Actual future (held out)" });
+  if (o.ballLanding) items.push({ kind: "landing", label: "Landing spot" });
   return [...items, ...extra];
 }

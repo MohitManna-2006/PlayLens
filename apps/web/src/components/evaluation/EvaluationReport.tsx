@@ -100,7 +100,7 @@ export function EvaluationReport() {
           )}
         </header>
         <p className="num flex flex-wrap gap-x-4 gap-y-1 text-meta text-fg-2">
-          <span className="font-sans">{model ? `${model.name} · ${kindText(model)}` : "Loading model"}</span>
+          <span className="font-sans">{model ? `${model.name} · ${kindText(model)}` : models.data?.length === 0 ? "No model" : "Loading model"}</span>
           <span>task {r?.task ?? "—"}</span>
           <span>dataset {r?.dataset_version ?? "—"}</span>
           <span>split {r?.split ?? "—"}</span>
@@ -119,6 +119,11 @@ export function EvaluationReport() {
         {models.isError ? (
           <StatusState kind="error" title="Model registry unavailable" className="mt-8" action={<button type="button" className="btn" onClick={() => models.refetch()}>Retry</button>}>
             {errorMessage(models.error)}
+          </StatusState>
+        ) : models.data && models.data.length === 0 ? (
+          <StatusState kind="unavailable" title="No models are registered yet" className="mt-8">
+            The model registry is empty: nothing has been trained or evaluated, so this page reports no metrics. Tracking replay and
+            play metadata do not depend on a model.
           </StatusState>
         ) : report.isError ? (
           <StatusState kind="error" title="Report unavailable" className="mt-8" action={<button type="button" className="btn" onClick={() => report.refetch()}>Retry</button>}>

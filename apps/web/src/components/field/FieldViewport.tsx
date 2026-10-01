@@ -10,6 +10,7 @@ import {
   playerScreenPosition,
   render,
   type ForecastLayer,
+  type GroundTruthLayer,
   type OverlayState,
   type PlayLabLayer,
   type RenderInput,
@@ -32,6 +33,7 @@ interface Props {
   counterpartId?: string | null;
   forecast?: ForecastLayer | null;
   playlab?: PlayLabLayer | null;
+  groundTruth?: GroundTruthLayer | null;
   /** Hold the final frame and label it (Compare after one play ends). */
   ended?: boolean;
   interpolate?: boolean;
@@ -65,6 +67,7 @@ export function FieldViewport({
   counterpartId = null,
   forecast = null,
   playlab = null,
+  groundTruth = null,
   ended = false,
   interpolate = true,
   onSelect,
@@ -108,6 +111,7 @@ export function FieldViewport({
     overlays,
     forecast,
     playlab,
+    groundTruth,
     fonts,
     ended,
   };
@@ -269,6 +273,7 @@ export function FieldViewport({
           <p className="text-body-2 font-medium text-fg">{playerLabel(tipTrack.ref)}{tipTrack.ref.name ? "" : " · name unavailable"}</p>
           <p className="text-caption text-fg-2">
             {sideLabel(tipTrack.ref.side)} · {tipTrack.ref.position ?? "Role unavailable"}
+            {tipTrack.ref.role ? ` · ${tipTrack.ref.role}` : ""}
           </p>
           <p className="num text-meta text-fg">{Number.isFinite(tipSpeed) ? fmtSpeed(tipSpeed) : "Speed unavailable"}</p>
         </div>

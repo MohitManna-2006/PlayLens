@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "invalid_play_id",
+    "details": null,
+    "message": "'101' is not a PlayLens play ID; expected '<game_id>-<play_id>', for example '2023090700-101'.",
+    "request_id": "example",
+    "status": 422
+  }
+}

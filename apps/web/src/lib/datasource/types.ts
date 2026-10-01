@@ -12,10 +12,13 @@ import type {
  */
 export interface RawSource {
   readonly kind: "fixture" | "api";
+  getDataset(signal?: AbortSignal): Promise<unknown>;
   listPlays(query: PlayQuery, signal?: AbortSignal): Promise<unknown>;
   getFacets(signal?: AbortSignal): Promise<unknown>;
   getPlay(playId: string, signal?: AbortSignal): Promise<unknown>;
   getFrames(playId: string, signal?: AbortSignal): Promise<unknown>;
+  /** Held-out actual future trajectories. Only requested when the play reports some. */
+  getFuture(playId: string, signal?: AbortSignal): Promise<unknown>;
   listModels(signal?: AbortSignal): Promise<unknown>;
   findSimilar(req: SimilarRequest, signal?: AbortSignal): Promise<unknown>;
   compare(left: string, right: string, signal?: AbortSignal): Promise<unknown>;

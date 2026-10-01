@@ -19,10 +19,11 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install
-      - run: pnpm lint
-      - run: pnpm typecheck
-      # - run: pnpm test # uncomment when tests exist
-      - run: pnpm build
+      # Root lint/typecheck/test also run uv; the Python job covers those.
+      - run: pnpm --filter web lint
+      - run: pnpm --filter web typecheck
+      - run: pnpm --filter web test
+      - run: pnpm --filter web build
 
   python:
     runs-on: ubuntu-latest
@@ -39,4 +40,5 @@ jobs:
       - run: uv sync
       - run: uv run ruff check .
       - run: uv run mypy services/api ml
-      # - run: uv run pytest # uncomment when tests exist
+      # Tests use synthetic data; the real-data regression tests skip without the licensed files.
+      - run: uv run pytest

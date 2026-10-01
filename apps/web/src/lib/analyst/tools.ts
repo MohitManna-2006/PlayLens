@@ -155,7 +155,7 @@ export async function similarEvidence(client: PlayLensClient, playId: string, si
     const source: EvidenceSource = {
       id: "s1",
       tool: "find_similar_plays",
-      play_ids: [playId, ...r.results.map((x) => x.play.play_id)],
+      play_ids: [playId, ...r.results.map((x) => x.play.id)],
       player_ids: [],
       frame_range: null,
       definition: `Cosine similarity between ${r.model_kind === "learned" ? "learned play embeddings" : "baseline play descriptors"} (${r.scope.description}; self-match ${r.scope.self_match_excluded ? "excluded" : "included"}). Not a probability.`,
@@ -173,7 +173,7 @@ export async function similarEvidence(client: PlayLensClient, playId: string, si
               title: `Most similar plays · ${r.model_version}`,
               model_version: r.model_version,
               items: r.results.map((x) => ({
-                play_id: x.play.play_id,
+                play_id: x.play.id,
                 label: `${x.play.away_team} at ${x.play.home_team}`,
                 meta: x.play.description,
                 score: x.score,
@@ -184,8 +184,8 @@ export async function similarEvidence(client: PlayLensClient, playId: string, si
         : [],
       actions: top
         ? [
-            { type: "open_play", play_id: top.play.play_id, label: `Open play ${top.play.play_id}` },
-            { type: "compare_plays", left_play_id: playId, right_play_id: top.play.play_id, label: `Compare with ${top.play.play_id}` },
+            { type: "open_play", play_id: top.play.id, label: `Open play ${top.play.id}` },
+            { type: "compare_plays", left_play_id: playId, right_play_id: top.play.id, label: `Compare with ${top.play.id}` },
           ]
         : [],
       notices: r.results.length ? [] : ["The retrieval index returned no results for this play."],

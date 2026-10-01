@@ -1,10 +1,12 @@
 /**
- * Field geometry and the direction-normalization display transform.
+ * Field geometry and the orientation display transform.
  *
- * Source coordinates: yards, x ∈ [0, 120] including both 10 yd end zones,
- * y ∈ [0, 53⅓]. "Normalized" presentation rotates a play 180° when the offense
- * attacks toward −x so it always moves left → right on screen. The transform is
- * its own inverse and never touches stored coordinates (Masterbrain §9.1).
+ * Stored coordinates are canonical yards (x ∈ [0, 120] including both 10 yd end
+ * zones, y ∈ [0, 53⅓]) with the offense attacking toward +x, as served by the
+ * API (Masterbrain §9.1). "Normalized" presentation shows them as stored.
+ * "Source" presentation re-applies the recorded orientation: plays recorded
+ * moving left are rotated 180° back. The rotation is its own inverse, matches
+ * the preprocessing transform exactly, and never touches stored values.
  */
 import type { PlayDirection } from "@/lib/contracts";
 
@@ -30,18 +32,27 @@ export interface Extent {
 
 export const FULL_FIELD: Extent = { x0: 0, x1: FIELD_LENGTH, y0: 0, y1: FIELD_WIDTH };
 
-/** True when the display must rotate source coordinates by 180°. */
+/**
+ * True when the display must rotate stored (canonical) coordinates by 180°:
+ * only in Source view for plays recorded moving left.
+ */
 export function isFlipped(direction: PlayDirection | null, orientation: Orientation): boolean {
-  return orientation === "normalized" && direction === "left";
+  return orientation === "source" && direction === "left";
 }
 
+/** Stored (canonical) coordinates → display coordinates. */
 export function toDisplay(x: number, y: number, flipped: boolean): Point {
   return flipped ? { x: FIELD_LENGTH - x, y: FIELD_WIDTH - y } : { x, y };
 }
 
-/** Inverse of toDisplay (the rotation is an involution). */
+/** Display coordinates → stored (canonical) coordinates; the rotation is an involution. */
 export function toSource(x: number, y: number, flipped: boolean): Point {
   return toDisplay(x, y, flipped);
+}
+
+/** Recorded (raw) position of a canonical point, given the recorded play direction. */
+export function toRecorded(p: Point, direction: PlayDirection | null): Point {
+  return toDisplay(p.x, p.y, direction === "left");
 }
 
 /** Rotate an NGS angle (0° = +y, clockwise) into display space. */

@@ -2,6 +2,8 @@
 
 Date: 2026-09-30
 
+> **Status (Phase 2):** The revisit trigger for the default was met. The web app now defaults to `api`, served from real NFL tracking data; the fixture runs only with `NEXT_PUBLIC_PLAYLENS_DATA_SOURCE=fixture` and never as a fallback. The API base URL variable is now `NEXT_PUBLIC_PLAYLENS_API_BASE_URL`. See ADR-0002.
+
 ## Context
 
 The design bible (`docs/PLAYLENS_DESIGN_BIBLE.md`) was implemented before the ingestion pipeline, FastAPI service, and trained models exist. The bible forbids presenting mock data or unimplemented features as live product evidence and says a capability appears as available only when its backing data or service exists. The Masterbrain (§36) allows mock adapters early, provided they are replaced by real model outputs before a feature is considered complete.

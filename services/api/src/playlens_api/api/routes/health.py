@@ -1,39 +1,35 @@
-from typing import Any
+from fastapi import APIRouter, Request
 
-import redis
-from fastapi import APIRouter
-from sqlalchemy import text
+from ... import __version__
+from ...schemas.health import Health, HealthDataset
+from ...services.plays import PlayService
 
-from playlens_api.config import settings
-from playlens_api.db import engine
+router = APIRouter(tags=["health"])
 
-router = APIRouter()
 
-@router.get("/health")
-def health_check() -> dict[str, Any]:
-    db_status = "unavailable"
-    if engine:
-        try:
-            with engine.connect() as conn:
-                conn.execute(text("SELECT 1"))
-            db_status = "ok"
-        except Exception:
-            pass
-
-    redis_status = "unavailable"
-    try:
-        r = redis.from_url(settings.redis_url)
-        if r.ping():
-            redis_status = "ok"
-    except Exception:
-        pass
-
-    return {
-        "status": "ok" if db_status == "ok" and redis_status == "ok" else "degraded",
-        "service": "playlens-api",
-        "version": "0.1.0",
-        "dependencies": {
-            "database": db_status,
-            "redis": redis_status
-        }
-    }
+@router.get("/health", response_model=Health, summary="Liveness and dataset readiness")
+def health(request: Request) -> Health:
+    service: PlayService | None = getattr(request.app.state, "play_service", None)
+    if service is None:
+        dataset = HealthDataset(
+            loaded=False,
+            dataset_version=None,
+            subset=None,
+            play_count=None,
+            error=getattr(request.app.state, "dataset_error", None),
+        )
+    else:
+        info = service.repo.info()
+        dataset = HealthDataset(
+            loaded=True,
+            dataset_version=info.dataset_version,
+            subset=info.subset,
+            play_count=info.play_count,
+            error=None,
+        )
+    return Health(
+        status="ok" if dataset.loaded else "degraded",
+        service="playlens-api",
+        version=__version__,
+        dataset=dataset,
+    )
