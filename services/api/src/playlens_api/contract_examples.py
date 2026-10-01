@@ -20,23 +20,37 @@ from playlens_ml.data.paths import find_repo_root
 from playlens_ml.data.preprocess import PreprocessOptions, run
 from playlens_ml.data.subset import DevSubsetRule
 from playlens_ml.data.testing import default_plays, write_raw_dataset
+from playlens_ml.datasets.testing import build_synthetic_ml_root, tiny_config
+from playlens_ml.training.train import run_training
 
 from .config import Settings
 from .main import create_app
 
 FIXED_TIME = "2026-01-01T00:00:00+00:00"
 HEADERS = {"X-Request-ID": "example"}
+# Run-specific values replaced so regenerated files are stable across runs and machines.
+VOLATILE = {
+    "generated_at": FIXED_TIME,
+    "created_at": FIXED_TIME,
+    "run_time": FIXED_TIME,
+    "run_id": "trajectory-test-example-run",
+    "request_id": "example",
+    "latency_ms": 1.0,
+    "git_commit": "0000000000000000000000000000000000000000",
+}
+FLOAT_DIGITS = 4
 
 
 def _normalize(value: Any) -> Any:
-    """Replace run-specific values so regenerated files are byte-stable."""
     if isinstance(value, dict):
         return {
-            k: FIXED_TIME if k == "generated_at" and v else _normalize(v)
+            k: (VOLATILE[k] if k in VOLATILE and v is not None else _normalize(v))
             for k, v in value.items()
         }
     if isinstance(value, list):
         return [_normalize(v) for v in value]
+    if isinstance(value, float):
+        return round(value, FLOAT_DIGITS)
     return value
 
 
@@ -55,7 +69,9 @@ def build() -> dict[str, Any]:
         )
         plays = {f"{p.game_id}-{p.play_id}": p for p in default_plays()}
         left = next(i for i in summary.selected_ids if plays[i].direction == "left")
-        app = create_app(Settings(data_root=root, log_level="WARNING"))
+        app = create_app(
+            Settings(data_root=root, model_dir=root / "no-models", log_level="WARNING")
+        )
         with TestClient(app, headers=HEADERS) as c:
 
             def get(path: str, **params: Any) -> Any:
@@ -69,15 +85,49 @@ def build() -> dict[str, Any]:
                 "play-detail.json": get(f"/api/v1/plays/{left}"),
                 "frames.json": get(f"/api/v1/plays/{left}/frames"),
                 "future.json": get(f"/api/v1/plays/{left}/future"),
-                "models.json": get("/api/v1/models"),
+                "models-empty.json": get("/api/v1/models"),
                 "error-play-not-found.json": get("/api/v1/plays/2099090010-999"),
                 "error-invalid-play-id.json": get("/api/v1/plays/101"),
+                "error-model-unavailable.json": c.post(
+                    "/api/v1/predict/trajectory", json={"play_id": left}
+                ).json(),
             }
             openapi = app.openapi()
+        examples.update(_model_examples(root / "ml", left, TestClient))
     return {
         **{f"examples/{k}": _normalize(v) for k, v in examples.items()},
         "openapi.json": openapi,
     }
+
+
+def _model_examples(root: Path, play_id: str, client_cls: Any) -> dict[str, Any]:
+    """A tiny model trained for two epochs on synthetic data (CPU), served by the real
+    routes."""
+    build_synthetic_ml_root(root)
+    run_training(
+        tiny_config(epochs=2),
+        data_root=root,
+        artifacts_root=root / "artifacts",
+        config_path="playlens_ml.datasets.testing.tiny_config",
+    )
+    settings = Settings(
+        data_root=root,
+        subset="full",
+        model_dir=root / "artifacts" / "models",
+        log_level="WARNING",
+    )
+    with client_cls(create_app(settings), headers=HEADERS) as c:
+        return {
+            "models.json": c.get("/api/v1/models").json(),
+            "trajectory-prediction.json": c.post(
+                "/api/v1/predict/trajectory", json={"play_id": play_id}
+            ).json(),
+            "evaluation-summary.json": c.get("/api/v1/evaluation/summary").json(),
+            "error-unsupported-origin.json": c.post(
+                "/api/v1/predict/trajectory",
+                json={"play_id": play_id, "origin_frame_id": 1},
+            ).json(),
+        }
 
 
 def render(payload: Any) -> str:

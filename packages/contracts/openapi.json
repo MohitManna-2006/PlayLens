@@ -55,6 +55,28 @@
         "title": "BallPosition",
         "type": "object"
       },
+      "ConditionGroup": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "title": "Conditions",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/TrajectoryRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "conditions",
+          "rows"
+        ],
+        "title": "ConditionGroup",
+        "type": "object"
+      },
       "CoordinateInfo": {
         "additionalProperties": false,
         "properties": {
@@ -98,6 +120,37 @@
           "raw_transform"
         ],
         "title": "CoordinateInfo",
+        "type": "object"
+      },
+      "CoveragePoint": {
+        "additionalProperties": false,
+        "properties": {
+          "empirical": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Empirical"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "nominal": {
+            "title": "Nominal",
+            "type": "number"
+          }
+        },
+        "required": [
+          "nominal",
+          "empirical",
+          "n"
+        ],
+        "title": "CoveragePoint",
         "type": "object"
       },
       "DatasetStatus": {
@@ -264,6 +317,28 @@
         "title": "ErrorBody",
         "type": "object"
       },
+      "ErrorByHorizon": {
+        "additionalProperties": false,
+        "properties": {
+          "definition": {
+            "title": "Definition",
+            "type": "string"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/HorizonSeries"
+            },
+            "title": "Series",
+            "type": "array"
+          }
+        },
+        "required": [
+          "definition",
+          "series"
+        ],
+        "title": "ErrorByHorizon",
+        "type": "object"
+      },
       "ErrorEnvelope": {
         "additionalProperties": false,
         "description": "Every non-2xx response has this shape.",
@@ -284,6 +359,253 @@
           "error"
         ],
         "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "EvaluationReport": {
+        "additionalProperties": false,
+        "properties": {
+          "artifact_uri": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artifact Uri"
+          },
+          "dataset_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Version"
+          },
+          "error_by_horizon": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ErrorByHorizon"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "failure_modes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failure Modes",
+            "type": "array"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "reproducibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Reproducibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "retrieval": {
+            "title": "Retrieval",
+            "type": "null"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "run_time": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Time"
+          },
+          "scope": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvaluationScope"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "slices": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SliceMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "split": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Split"
+          },
+          "status": {
+            "enum": [
+              "complete",
+              "pending",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "status_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Reason"
+          },
+          "system": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SystemMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "task": {
+            "title": "Task",
+            "type": "string"
+          },
+          "trajectory": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TrajectoryMetrics"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "uncertainty": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/UncertaintyEvaluation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "model_version",
+          "task",
+          "status",
+          "status_reason",
+          "run_id",
+          "run_time",
+          "dataset_version",
+          "split",
+          "artifact_uri",
+          "scope",
+          "trajectory",
+          "error_by_horizon",
+          "uncertainty",
+          "system",
+          "slices",
+          "failure_modes",
+          "reproducibility"
+        ],
+        "title": "EvaluationReport",
+        "type": "object"
+      },
+      "EvaluationScope": {
+        "additionalProperties": false,
+        "properties": {
+          "exclusions": {
+            "title": "Exclusions",
+            "type": "string"
+          },
+          "horizon": {
+            "title": "Horizon",
+            "type": "string"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Limitations",
+            "type": "array"
+          },
+          "observation_window": {
+            "title": "Observation Window",
+            "type": "string"
+          },
+          "population": {
+            "title": "Population",
+            "type": "string"
+          },
+          "predicted": {
+            "title": "Predicted",
+            "type": "string"
+          },
+          "sample_count": {
+            "title": "Sample Count",
+            "type": "integer"
+          },
+          "sample_unit": {
+            "title": "Sample Unit",
+            "type": "string"
+          },
+          "split_policy": {
+            "title": "Split Policy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "predicted",
+          "observation_window",
+          "horizon",
+          "population",
+          "sample_unit",
+          "sample_count",
+          "exclusions",
+          "split_policy",
+          "limitations"
+        ],
+        "title": "EvaluationScope",
         "type": "object"
       },
       "Facets": {
@@ -661,11 +983,27 @@
         "title": "FutureTrajectory",
         "type": "object"
       },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
       "Health": {
         "additionalProperties": false,
         "properties": {
           "dataset": {
             "$ref": "#/components/schemas/HealthDataset"
+          },
+          "models": {
+            "$ref": "#/components/schemas/HealthModels"
           },
           "service": {
             "title": "Service",
@@ -688,7 +1026,8 @@
           "status",
           "service",
           "version",
-          "dataset"
+          "dataset",
+          "models"
         ],
         "title": "Health",
         "type": "object"
@@ -755,6 +1094,268 @@
         "title": "HealthDataset",
         "type": "object"
       },
+      "HealthModels": {
+        "additionalProperties": false,
+        "properties": {
+          "errors": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Artifact directories that failed validation, with the reason.",
+            "title": "Errors",
+            "type": "object"
+          },
+          "loaded": {
+            "description": "Model versions loaded from artifacts.",
+            "items": {
+              "type": "string"
+            },
+            "title": "Loaded",
+            "type": "array"
+          }
+        },
+        "required": [
+          "loaded",
+          "errors"
+        ],
+        "title": "HealthModels",
+        "type": "object"
+      },
+      "HorizonPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "hi": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hi"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "number"
+          },
+          "lo": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lo"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "horizon_s",
+          "value",
+          "lo",
+          "hi",
+          "n"
+        ],
+        "title": "HorizonPoint",
+        "type": "object"
+      },
+      "HorizonSeries": {
+        "additionalProperties": false,
+        "properties": {
+          "is_served": {
+            "title": "Is Served",
+            "type": "boolean"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/HorizonPoint"
+            },
+            "title": "Points",
+            "type": "array"
+          }
+        },
+        "required": [
+          "model_version",
+          "label",
+          "is_served",
+          "points"
+        ],
+        "title": "HorizonSeries",
+        "type": "object"
+      },
+      "InputWindow": {
+        "additionalProperties": false,
+        "properties": {
+          "end_frame_id": {
+            "title": "End Frame Id",
+            "type": "integer"
+          },
+          "start_frame_id": {
+            "title": "Start Frame Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start_frame_id",
+          "end_frame_id"
+        ],
+        "title": "InputWindow",
+        "type": "object"
+      },
+      "Interval": {
+        "additionalProperties": false,
+        "properties": {
+          "hi": {
+            "title": "Hi",
+            "type": "number"
+          },
+          "level": {
+            "title": "Level",
+            "type": "number"
+          },
+          "lo": {
+            "title": "Lo",
+            "type": "number"
+          }
+        },
+        "required": [
+          "lo",
+          "hi",
+          "level"
+        ],
+        "title": "Interval",
+        "type": "object"
+      },
+      "LatencyConditions": {
+        "additionalProperties": false,
+        "properties": {
+          "batch_size": {
+            "title": "Batch Size",
+            "type": "integer"
+          },
+          "dataset_size": {
+            "title": "Dataset Size",
+            "type": "string"
+          },
+          "hardware": {
+            "title": "Hardware",
+            "type": "string"
+          },
+          "index_size": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index Size"
+          },
+          "timing_scope": {
+            "enum": [
+              "model_only",
+              "end_to_end"
+            ],
+            "title": "Timing Scope",
+            "type": "string"
+          },
+          "warm": {
+            "title": "Warm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "hardware",
+          "dataset_size",
+          "index_size",
+          "batch_size",
+          "warm",
+          "timing_scope"
+        ],
+        "title": "LatencyConditions",
+        "type": "object"
+      },
+      "LatencyRow": {
+        "additionalProperties": false,
+        "properties": {
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "operation": {
+            "title": "Operation",
+            "type": "string"
+          },
+          "p50_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P50 Ms"
+          },
+          "p95_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P95 Ms"
+          },
+          "p99_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P99 Ms"
+          }
+        },
+        "required": [
+          "operation",
+          "p50_ms",
+          "p95_ms",
+          "p99_ms",
+          "n"
+        ],
+        "title": "LatencyRow",
+        "type": "object"
+      },
       "ModelInfo": {
         "additionalProperties": false,
         "properties": {
@@ -780,6 +1381,13 @@
             "title": "Kind",
             "type": "string"
           },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/ModelMetric"
+            },
+            "title": "Metrics",
+            "type": "array"
+          },
           "model_version": {
             "title": "Model Version",
             "type": "string"
@@ -787,6 +1395,16 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelProvenance"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "retrieval": {
             "anyOf": [
@@ -834,6 +1452,155 @@
           "retrieval"
         ],
         "title": "ModelInfo",
+        "type": "object"
+      },
+      "ModelMetric": {
+        "additionalProperties": false,
+        "properties": {
+          "ade_yd": {
+            "title": "Ade Yd",
+            "type": "number"
+          },
+          "baseline_ade_yd": {
+            "title": "Baseline Ade Yd",
+            "type": "number"
+          },
+          "baseline_fde_yd": {
+            "title": "Baseline Fde Yd",
+            "type": "number"
+          },
+          "baseline_model_version": {
+            "title": "Baseline Model Version",
+            "type": "string"
+          },
+          "fde_yd": {
+            "title": "Fde Yd",
+            "type": "number"
+          },
+          "players": {
+            "title": "Players",
+            "type": "integer"
+          },
+          "split": {
+            "enum": [
+              "validation",
+              "test"
+            ],
+            "title": "Split",
+            "type": "string"
+          }
+        },
+        "required": [
+          "split",
+          "ade_yd",
+          "fde_yd",
+          "players",
+          "baseline_model_version",
+          "baseline_ade_yd",
+          "baseline_fde_yd"
+        ],
+        "title": "ModelMetric",
+        "type": "object"
+      },
+      "ModelProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "git_commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Commit"
+          },
+          "mlflow_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mlflow Run Id"
+          },
+          "model_name": {
+            "title": "Model Name",
+            "type": "string"
+          },
+          "parameters": {
+            "title": "Parameters",
+            "type": "integer"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "split_version": {
+            "title": "Split Version",
+            "type": "string"
+          },
+          "weights_bytes": {
+            "title": "Weights Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_name",
+          "run_id",
+          "mlflow_run_id",
+          "dataset_version",
+          "split_version",
+          "created_at",
+          "parameters",
+          "weights_bytes",
+          "git_commit"
+        ],
+        "title": "ModelProvenance",
+        "type": "object"
+      },
+      "PathPoint": {
+        "additionalProperties": false,
+        "properties": {
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "PathPoint",
         "type": "object"
       },
       "PlayAnnotations": {
@@ -1830,6 +2597,55 @@
         "title": "PlayerRef",
         "type": "object"
       },
+      "PredictedPlayer": {
+        "additionalProperties": false,
+        "properties": {
+          "path": {
+            "description": "Predicted canonical positions at future steps 1..n.",
+            "items": {
+              "$ref": "#/components/schemas/PathPoint"
+            },
+            "title": "Path",
+            "type": "array"
+          },
+          "player_id": {
+            "title": "Player Id",
+            "type": "string"
+          },
+          "samples": {
+            "anyOf": [
+              {
+                "items": {
+                  "items": {
+                    "$ref": "#/components/schemas/PathPoint"
+                  },
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Samples"
+          },
+          "valid": {
+            "description": "True where the play supplies an actual future position for comparison.",
+            "items": {
+              "type": "boolean"
+            },
+            "title": "Valid",
+            "type": "array"
+          }
+        },
+        "required": [
+          "player_id",
+          "path",
+          "valid"
+        ],
+        "title": "PredictedPlayer",
+        "type": "object"
+      },
       "Provenance": {
         "additionalProperties": false,
         "properties": {
@@ -1879,6 +2695,71 @@
           "subset"
         ],
         "title": "Provenance",
+        "type": "object"
+      },
+      "Reproducibility": {
+        "additionalProperties": false,
+        "properties": {
+          "artifacts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Artifacts",
+            "type": "array"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "dataset_manifest": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Manifest"
+          },
+          "git_commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Commit"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          }
+        },
+        "required": [
+          "git_commit",
+          "config",
+          "dataset_manifest",
+          "run_id",
+          "artifacts"
+        ],
+        "title": "Reproducibility",
         "type": "object"
       },
       "RetrievalModelInfo": {
@@ -1940,6 +2821,121 @@
           "scores"
         ],
         "title": "SimilarityScores",
+        "type": "object"
+      },
+      "SliceMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "reporting_rule": {
+            "title": "Reporting Rule",
+            "type": "string"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/SliceRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "reporting_rule",
+          "rows"
+        ],
+        "title": "SliceMetrics",
+        "type": "object"
+      },
+      "SliceRow": {
+        "additionalProperties": false,
+        "properties": {
+          "ade_yd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ade Yd"
+          },
+          "coverage": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage"
+          },
+          "fde_yd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fde Yd"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "slice": {
+            "title": "Slice",
+            "type": "string"
+          },
+          "sufficient": {
+            "title": "Sufficient",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "slice",
+          "n",
+          "ade_yd",
+          "fde_yd",
+          "coverage",
+          "sufficient",
+          "note"
+        ],
+        "title": "SliceRow",
+        "type": "object"
+      },
+      "SystemMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "$ref": "#/components/schemas/LatencyConditions"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/LatencyRow"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "rows",
+          "conditions"
+        ],
+        "title": "SystemMetrics",
         "type": "object"
       },
       "TrackingSummary": {
@@ -2010,6 +3006,33 @@
         "title": "TrackingSummary",
         "type": "object"
       },
+      "TrajectoryMetrics": {
+        "additionalProperties": false,
+        "properties": {
+          "aggregation": {
+            "title": "Aggregation",
+            "type": "string"
+          },
+          "condition_groups": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionGroup"
+            },
+            "title": "Condition Groups",
+            "type": "array"
+          },
+          "masks": {
+            "title": "Masks",
+            "type": "string"
+          }
+        },
+        "required": [
+          "aggregation",
+          "masks",
+          "condition_groups"
+        ],
+        "title": "TrajectoryMetrics",
+        "type": "object"
+      },
       "TrajectoryModelInfo": {
         "additionalProperties": false,
         "properties": {
@@ -2023,6 +3046,15 @@
           "input_window_frames": {
             "title": "Input Window Frames",
             "type": "integer"
+          },
+          "origin": {
+            "description": "Which frame a forecast may start from.",
+            "enum": [
+              "any_frame",
+              "last_observed_frame"
+            ],
+            "title": "Origin",
+            "type": "string"
           },
           "origin_after_snap": {
             "title": "Origin After Snap",
@@ -2059,15 +3091,442 @@
           "uncertainty",
           "uncertainty_note",
           "origin_rule",
-          "origin_after_snap"
+          "origin_after_snap",
+          "origin"
         ],
         "title": "TrajectoryModelInfo",
+        "type": "object"
+      },
+      "TrajectoryPrediction": {
+        "additionalProperties": false,
+        "properties": {
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "future_frame_ids": {
+            "description": "Output-file frame_id of each predicted step (step k is frame_id k after the origin).",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Future Frame Ids",
+            "type": "array"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "number"
+          },
+          "input_window": {
+            "$ref": "#/components/schemas/InputWindow"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "latency_scope": {
+            "title": "Latency Scope",
+            "type": "string"
+          },
+          "model_name": {
+            "title": "Model Name",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "origin_frame_id": {
+            "title": "Origin Frame Id",
+            "type": "integer"
+          },
+          "play_id": {
+            "title": "Play Id",
+            "type": "string"
+          },
+          "play_split": {
+            "description": "Which partition this play's game belonged to when the model was trained.",
+            "enum": [
+              "train",
+              "validation",
+              "test",
+              "unknown"
+            ],
+            "title": "Play Split",
+            "type": "string"
+          },
+          "players": {
+            "items": {
+              "$ref": "#/components/schemas/PredictedPlayer"
+            },
+            "title": "Players",
+            "type": "array"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "split_version": {
+            "title": "Split Version",
+            "type": "string"
+          },
+          "step_s": {
+            "title": "Step S",
+            "type": "number"
+          },
+          "target_horizon_frames": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Future frames the dataset supplies for this play.",
+            "title": "Target Horizon Frames"
+          },
+          "uncertainty": {
+            "$ref": "#/components/schemas/TrajectoryUncertainty"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "play_id",
+          "model_name",
+          "model_version",
+          "dataset_version",
+          "split_version",
+          "play_split",
+          "origin_frame_id",
+          "input_window",
+          "horizon_s",
+          "step_s",
+          "future_frame_ids",
+          "target_horizon_frames",
+          "players",
+          "uncertainty",
+          "latency_ms",
+          "latency_scope",
+          "warnings"
+        ],
+        "title": "TrajectoryPrediction",
+        "type": "object"
+      },
+      "TrajectoryRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "horizon_s": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default and maximum: the model horizon.",
+            "title": "Horizon S"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Default: the served trajectory model.",
+            "title": "Model Version"
+          },
+          "origin_frame_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Must be the play's last observed frame when given.",
+            "title": "Origin Frame Id"
+          },
+          "play_id": {
+            "description": "PlayLens play ID.",
+            "examples": [
+              "2023091008-3826"
+            ],
+            "title": "Play Id",
+            "type": "string"
+          },
+          "player_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Subset of target players; default all.",
+            "title": "Player Ids"
+          }
+        },
+        "required": [
+          "play_id"
+        ],
+        "title": "TrajectoryRequest",
+        "type": "object"
+      },
+      "TrajectoryRow": {
+        "additionalProperties": false,
+        "properties": {
+          "ade_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ade_yd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ade Yd"
+          },
+          "fde_interval": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Interval"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "fde_yd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fde Yd"
+          },
+          "horizon_s": {
+            "title": "Horizon S",
+            "type": "number"
+          },
+          "is_served": {
+            "title": "Is Served",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "learned",
+              "baseline",
+              "mock"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "model_version",
+          "label",
+          "is_served",
+          "kind",
+          "ade_yd",
+          "fde_yd",
+          "ade_interval",
+          "fde_interval",
+          "horizon_s",
+          "n"
+        ],
+        "title": "TrajectoryRow",
+        "type": "object"
+      },
+      "TrajectoryUncertainty": {
+        "additionalProperties": false,
+        "properties": {
+          "calibration": {
+            "anyOf": [
+              {
+                "enum": [
+                  "nominal",
+                  "empirical",
+                  "uncalibrated"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calibration"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "kind": {
+            "enum": [
+              "none",
+              "samples",
+              "gaussian"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "calibration",
+          "description"
+        ],
+        "title": "TrajectoryUncertainty",
+        "type": "object"
+      },
+      "UncertaintyEvaluation": {
+        "additionalProperties": false,
+        "properties": {
+          "calibration": {
+            "anyOf": [
+              {
+                "enum": [
+                  "nominal",
+                  "empirical",
+                  "uncalibrated"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Calibration"
+          },
+          "coverage": {
+            "items": {
+              "$ref": "#/components/schemas/CoveragePoint"
+            },
+            "title": "Coverage",
+            "type": "array"
+          },
+          "definition": {
+            "title": "Definition",
+            "type": "string"
+          },
+          "supported": {
+            "title": "Supported",
+            "type": "boolean"
+          },
+          "unsupported_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unsupported Reason"
+          }
+        },
+        "required": [
+          "calibration",
+          "supported",
+          "unsupported_reason",
+          "definition",
+          "coverage"
+        ],
+        "title": "UncertaintyEvaluation",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       }
     }
   },
   "info": {
-    "description": "\nReal NFL tracking data (NFL Big Data Bowl 2026 Analytics) in the PlayLens canonical\ncoordinate frame. Observed frames, held-out future trajectories, and post-play\nmetadata are separate resources. No model is served in this version.\n",
+    "description": "\nReal NFL tracking data (NFL Big Data Bowl 2026 Analytics) in the PlayLens canonical\ncoordinate frame. Observed frames, held-out future trajectories, and post-play\nmetadata are separate resources. Trajectory forecasts come from a trained\nmodel artifact (artifacts/models/); without one, model routes answer 503.\n",
     "title": "PlayLens API",
     "version": "0.2.0"
   },
@@ -2104,9 +3563,78 @@
         ]
       }
     },
+    "/api/v1/evaluation/summary": {
+      "get": {
+        "operationId": "evaluation_summary_api_v1_evaluation_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "model_version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unknown play or model version."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "No model or no processed dataset is loaded."
+          }
+        },
+        "summary": "Recorded evaluation of a served model",
+        "tags": [
+          "models"
+        ]
+      }
+    },
     "/api/v1/models": {
       "get": {
-        "description": "No model is trained or served yet, so the registry is empty.\n\nThe web app reads this list to decide which model features to offer; an empty\nlist keeps forecasts, similarity, and PlayLab visibly unavailable.",
+        "description": "Models loaded from trained artifacts, with dataset/split versions and metrics.\n\nEmpty when no artifact exists; the web app then keeps forecasts unavailable.",
         "operationId": "list_models_api_v1_models_get",
         "responses": {
           "200": {
@@ -2717,6 +4245,68 @@
         "summary": "Held-out actual future trajectories (ground truth, not predictions)",
         "tags": [
           "plays"
+        ]
+      }
+    },
+    "/api/v1/predict/trajectory": {
+      "post": {
+        "description": "Real model inference. The response names the model and dataset versions, the\nsplit the play belonged to during training, and the server-side latency.",
+        "operationId": "predict_trajectory_api_v1_predict_trajectory_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrajectoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrajectoryPrediction"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Unknown play or model version."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Malformed request, or the play cannot be forecast."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "No model or no processed dataset is loaded."
+          }
+        },
+        "summary": "Forecast target players' future paths from the last observed frame",
+        "tags": [
+          "models"
         ]
       }
     },

@@ -12,10 +12,12 @@ import {
   ErrorEnvelopeSchema,
   FacetsSchema,
   FramesPayloadSchema,
+  EvaluationReportSchema,
   FuturePayloadSchema,
   ModelInfoSchema,
   PlayDetailSchema,
   PlayPageSchema,
+  TrajectoryPredictionSchema,
 } from "@/lib/contracts";
 import { buildGroundTruth } from "@/lib/play/groundTruth";
 import { parsePlayId } from "@/lib/playId";
@@ -62,8 +64,13 @@ describe("API examples match the web contract exactly", () => {
     exact(FramesPayloadSchema, "frames.json");
     exact(FuturePayloadSchema, "future.json");
     exact(ModelInfoSchema.array(), "models.json");
+    exact(ModelInfoSchema.array(), "models-empty.json");
+    exact(TrajectoryPredictionSchema, "trajectory-prediction.json");
+    exact(EvaluationReportSchema, "evaluation-summary.json");
     exact(ErrorEnvelopeSchema, "error-play-not-found.json");
     exact(ErrorEnvelopeSchema, "error-invalid-play-id.json");
+    exact(ErrorEnvelopeSchema, "error-model-unavailable.json");
+    exact(ErrorEnvelopeSchema, "error-unsupported-origin.json");
   });
 
   it("keeps list items lightweight and identities unambiguous", () => {
@@ -78,8 +85,26 @@ describe("API examples match the web contract exactly", () => {
     expect(page.dataset.synthetic).toBe(false);
   });
 
-  it("reports an empty model registry rather than inventing models", () => {
-    expect(example("models.json")).toEqual([]);
+  it("reports an empty model registry when no artifact exists, and a 503 for forecasts", () => {
+    expect(example("models-empty.json")).toEqual([]);
+    expect(ErrorEnvelopeSchema.parse(example("error-model-unavailable.json")).error.code).toBe("model_unavailable");
+  });
+
+  it("describes a served model with versions and recorded metrics", () => {
+    const [m] = ModelInfoSchema.array().parse(example("models.json"));
+    expect(m.kind).toBe("learned");
+    expect(m.trajectory?.origin).toBe("last_observed_frame");
+    expect(m.trajectory?.uncertainty).toBe("none");
+    expect(m.provenance?.dataset_version).toMatch(/^nfl_bdb_2026_analytics@full-/);
+    expect(m.metrics.map((x) => x.split).sort()).toEqual(["test", "validation"]);
+  });
+
+  it("keeps a prediction aligned with output frames and free of fake uncertainty", () => {
+    const p = TrajectoryPredictionSchema.parse(example("trajectory-prediction.json"));
+    expect(p.future_frame_ids).toEqual(p.players[0].path.map((_, k) => k + 1));
+    expect(p.uncertainty.kind).toBe("none");
+    expect(p.players.every((x) => x.samples === null && x.valid.length === x.path.length)).toBe(true);
+    expect(p.input_window.end_frame_id).toBe(p.origin_frame_id);
   });
 });
 

@@ -1,0 +1,2306 @@
+{
+ "note": "Copied from local training outputs (artifacts/, Git-ignored) so results are reviewable without the data. Regenerate by re-running the commands in docs/architecture/phase-3-ml.md.",
+ "model": {
+  "model_name": "trajectory-gnn-transformer",
+  "model_version": "trajectory-gnn-transformer-v1",
+  "run_id": "trajectory-gnn-transformer-20261001T031301Z-bb8cfa",
+  "mlflow_run_id": "9de5c7e09c3e4e9faa6e4882fe626fd6",
+  "created_at": "2026-10-01T03:31:37+00:00",
+  "dataset_version": "nfl_bdb_2026_analytics@full-91dc5311e8c7",
+  "split_version": "temporal-weeks-v1-b39c53db8a01",
+  "parameters": 289017,
+  "best_epoch": 29,
+  "training_device": "mps",
+  "uncertainty": "none"
+ },
+ "weights_sha256": "9090b48536ef28ab74584239ca66bf6bf94cb4a30ae66f69dcd7f1f326448e9d",
+ "git": {
+  "commit": "b55897b743855add9add96f4b5a462690ee410e1",
+  "dirty": true
+ },
+ "training": {
+  "epochs_run": 30,
+  "best_epoch": 29,
+  "train_seconds": 1115.7,
+  "validation_ade_by_epoch": [
+   1.0949,
+   0.742,
+   0.5652,
+   0.5131,
+   0.4781,
+   0.4727,
+   0.4593,
+   0.4527,
+   0.4379,
+   0.4315,
+   0.4151,
+   0.4159,
+   0.4134,
+   0.4037,
+   0.3906,
+   0.3929,
+   0.389,
+   0.3874,
+   0.3815,
+   0.3788,
+   0.3714,
+   0.3714,
+   0.3663,
+   0.3647,
+   0.3609,
+   0.3592,
+   0.358,
+   0.3569,
+   0.3565,
+   0.3563,
+   0.3563
+  ]
+ },
+ "evaluation": {
+  "model_version": "trajectory-gnn-transformer-v1",
+  "run_id": "trajectory-gnn-transformer-20261001T031301Z-bb8cfa",
+  "bootstrap": {
+   "samples": 1000,
+   "seed": 7,
+   "unit": "play"
+  },
+  "min_slice_players": 100,
+  "splits": {
+   "validation": {
+    "model": {
+     "summary": {
+      "ade_yd": 0.35634013339551096,
+      "fde_yd": 0.9771102927137266,
+      "frames": 67888,
+      "players": 5540,
+      "plays": 1687,
+      "predictor": "model",
+      "split": "validation"
+     },
+     "horizon": [
+      {
+       "error_yd": 0.011109243059368343,
+       "horizon_s": 0.1,
+       "players": 5540,
+       "step": 1
+      },
+      {
+       "error_yd": 0.026619444420593764,
+       "horizon_s": 0.2,
+       "players": 5540,
+       "step": 2
+      },
+      {
+       "error_yd": 0.05139130609255691,
+       "horizon_s": 0.3,
+       "players": 5540,
+       "step": 3
+      },
+      {
+       "error_yd": 0.08715092600670121,
+       "horizon_s": 0.4,
+       "players": 5540,
+       "step": 4
+      },
+      {
+       "error_yd": 0.1352254295031649,
+       "horizon_s": 0.5,
+       "players": 5540,
+       "step": 5
+      },
+      {
+       "error_yd": 0.1969468582060494,
+       "horizon_s": 0.6,
+       "players": 5514,
+       "step": 6
+      },
+      {
+       "error_yd": 0.2722675463135412,
+       "horizon_s": 0.7,
+       "players": 5309,
+       "step": 7
+      },
+      {
+       "error_yd": 0.36092396860294074,
+       "horizon_s": 0.8,
+       "players": 4749,
+       "step": 8
+      },
+      {
+       "error_yd": 0.46188778317141904,
+       "horizon_s": 0.9,
+       "players": 4146,
+       "step": 9
+      },
+      {
+       "error_yd": 0.572367532305379,
+       "horizon_s": 1.0,
+       "players": 3562,
+       "step": 10
+      },
+      {
+       "error_yd": 0.6944769170652685,
+       "horizon_s": 1.1,
+       "players": 2995,
+       "step": 11
+      },
+      {
+       "error_yd": 0.8283152384622269,
+       "horizon_s": 1.2,
+       "players": 2535,
+       "step": 12
+      },
+      {
+       "error_yd": 0.9710540498000408,
+       "horizon_s": 1.3,
+       "players": 2168,
+       "step": 13
+      },
+      {
+       "error_yd": 1.1109017493197013,
+       "horizon_s": 1.4,
+       "players": 1735,
+       "step": 14
+      },
+      {
+       "error_yd": 1.2528089146021102,
+       "horizon_s": 1.5,
+       "players": 1431,
+       "step": 15
+      },
+      {
+       "error_yd": 1.4173350952918806,
+       "horizon_s": 1.6,
+       "players": 1196,
+       "step": 16
+      },
+      {
+       "error_yd": 1.5672346607841938,
+       "horizon_s": 1.7,
+       "players": 973,
+       "step": 17
+      },
+      {
+       "error_yd": 1.7305301780235338,
+       "horizon_s": 1.8,
+       "players": 831,
+       "step": 18
+      },
+      {
+       "error_yd": 1.8394580615142668,
+       "horizon_s": 1.9,
+       "players": 713,
+       "step": 19
+      },
+      {
+       "error_yd": 1.9582318297743315,
+       "horizon_s": 2.0,
+       "players": 622,
+       "step": 20
+      },
+      {
+       "error_yd": 2.0592939642139845,
+       "horizon_s": 2.1,
+       "players": 518,
+       "step": 21
+      },
+      {
+       "error_yd": 2.1968606230416783,
+       "horizon_s": 2.2,
+       "players": 460,
+       "step": 22
+      },
+      {
+       "error_yd": 2.3186825832836564,
+       "horizon_s": 2.3,
+       "players": 408,
+       "step": 23
+      },
+      {
+       "error_yd": 2.5830256503047053,
+       "horizon_s": 2.4,
+       "players": 323,
+       "step": 24
+      }
+     ],
+     "slices": [
+      {
+       "ade_yd": 0.3855968665182595,
+       "fde_yd": 1.0486936742332245,
+       "players": 3853,
+       "slice": "side",
+       "sufficient": true,
+       "value": "defense"
+      },
+      {
+       "ade_yd": 0.2895196279290319,
+       "fde_yd": 0.813618432017446,
+       "players": 1687,
+       "slice": "side",
+       "sufficient": true,
+       "value": "offense"
+      },
+      {
+       "ade_yd": 0.3855968665182595,
+       "fde_yd": 1.0486936742332245,
+       "players": 3853,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Defensive Coverage"
+      },
+      {
+       "ade_yd": 0.2895196279290319,
+       "fde_yd": 0.813618432017446,
+       "players": 1687,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Targeted Receiver"
+      },
+      {
+       "ade_yd": 0.4076886510190156,
+       "fde_yd": 1.1194748657531794,
+       "players": 1571,
+       "slice": "position",
+       "sufficient": true,
+       "value": "CB"
+      },
+      {
+       "ade_yd": 0.3401692374353971,
+       "fde_yd": 0.8285667519894961,
+       "players": 35,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DE"
+      },
+      {
+       "ade_yd": 0.15620301246128843,
+       "fde_yd": 0.3049619226524121,
+       "players": 5,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DT"
+      },
+      {
+       "ade_yd": 0.12495679596287693,
+       "fde_yd": 0.30119752149953155,
+       "players": 11,
+       "slice": "position",
+       "sufficient": false,
+       "value": "FB"
+      },
+      {
+       "ade_yd": 0.44097510761751957,
+       "fde_yd": 1.223496838344146,
+       "players": 613,
+       "slice": "position",
+       "sufficient": true,
+       "value": "FS"
+      },
+      {
+       "ade_yd": 0.30332004182579964,
+       "fde_yd": 0.7973008413901168,
+       "players": 490,
+       "slice": "position",
+       "sufficient": true,
+       "value": "ILB"
+      },
+      {
+       "ade_yd": 0.5638046564711761,
+       "fde_yd": 1.0900240931792855,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "LB"
+      },
+      {
+       "ade_yd": 0.28858190333654166,
+       "fde_yd": 0.7538461802433263,
+       "players": 299,
+       "slice": "position",
+       "sufficient": true,
+       "value": "MLB"
+      },
+      {
+       "ade_yd": 0.21096100555315594,
+       "fde_yd": 0.4014497224011677,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "NT"
+      },
+      {
+       "ade_yd": 0.2805796396312392,
+       "fde_yd": 0.7403204723763549,
+       "players": 285,
+       "slice": "position",
+       "sufficient": true,
+       "value": "OLB"
+      },
+      {
+       "ade_yd": 0.131665818216774,
+       "fde_yd": 0.38273766822039096,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "QB"
+      },
+      {
+       "ade_yd": 0.18917069695257016,
+       "fde_yd": 0.5014923824688666,
+       "players": 250,
+       "slice": "position",
+       "sufficient": true,
+       "value": "RB"
+      },
+      {
+       "ade_yd": 0.5767425965214912,
+       "fde_yd": 1.594705398027402,
+       "players": 16,
+       "slice": "position",
+       "sufficient": false,
+       "value": "S"
+      },
+      {
+       "ade_yd": 0.43978489108611296,
+       "fde_yd": 1.2001060954922735,
+       "players": 543,
+       "slice": "position",
+       "sufficient": true,
+       "value": "SS"
+      },
+      {
+       "ade_yd": 0.2184516021395109,
+       "fde_yd": 0.6056841576253633,
+       "players": 422,
+       "slice": "position",
+       "sufficient": true,
+       "value": "TE"
+      },
+      {
+       "ade_yd": 0.3470125356570202,
+       "fde_yd": 0.9865265339223801,
+       "players": 997,
+       "slice": "position",
+       "sufficient": true,
+       "value": "WR"
+      },
+      {
+       "ade_yd": 0.15990182852983048,
+       "fde_yd": 0.4160481979544217,
+       "players": 2545,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "1-10 frames"
+      },
+      {
+       "ade_yd": 0.4375469416821056,
+       "fde_yd": 1.2390083631498736,
+       "players": 2477,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "11-20 frames"
+      },
+      {
+       "ade_yd": 0.9331475113052825,
+       "fde_yd": 2.4813217033162256,
+       "players": 518,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "21+ frames"
+      }
+     ],
+     "ade_interval": {
+      "lo": 0.33888604669863653,
+      "hi": 0.37307703364717015,
+      "level": 0.95
+     },
+     "fde_interval": {
+      "lo": 0.9264314778103524,
+      "hi": 1.0266111674261342,
+      "level": 0.95
+     }
+    },
+    "cv": {
+     "summary": {
+      "ade_yd": 1.0949313309549105,
+      "fde_yd": 2.7171605639000265,
+      "frames": 67888,
+      "players": 5540,
+      "plays": 1687,
+      "predictor": "trajectory-cv-baseline-v1",
+      "split": "validation"
+     },
+     "horizon": [
+      {
+       "error_yd": 0.02637429245733233,
+       "horizon_s": 0.1,
+       "players": 5540,
+       "step": 1
+      },
+      {
+       "error_yd": 0.09033673425664257,
+       "horizon_s": 0.2,
+       "players": 5540,
+       "step": 2
+      },
+      {
+       "error_yd": 0.1927559554657137,
+       "horizon_s": 0.3,
+       "players": 5540,
+       "step": 3
+      },
+      {
+       "error_yd": 0.33280953087396814,
+       "horizon_s": 0.4,
+       "players": 5540,
+       "step": 4
+      },
+      {
+       "error_yd": 0.5086777863797951,
+       "horizon_s": 0.5,
+       "players": 5540,
+       "step": 5
+      },
+      {
+       "error_yd": 0.7188961023718669,
+       "horizon_s": 0.6,
+       "players": 5514,
+       "step": 6
+      },
+      {
+       "error_yd": 0.9624363558298995,
+       "horizon_s": 0.7,
+       "players": 5309,
+       "step": 7
+      },
+      {
+       "error_yd": 1.233120227651912,
+       "horizon_s": 0.8,
+       "players": 4749,
+       "step": 8
+      },
+      {
+       "error_yd": 1.5417212742105078,
+       "horizon_s": 0.9,
+       "players": 4146,
+       "step": 9
+      },
+      {
+       "error_yd": 1.8665237827458032,
+       "horizon_s": 1.0,
+       "players": 3562,
+       "step": 10
+      },
+      {
+       "error_yd": 2.1868888896768417,
+       "horizon_s": 1.1,
+       "players": 2995,
+       "step": 11
+      },
+      {
+       "error_yd": 2.515216456494035,
+       "horizon_s": 1.2,
+       "players": 2535,
+       "step": 12
+      },
+      {
+       "error_yd": 2.849047687299711,
+       "horizon_s": 1.3,
+       "players": 2168,
+       "step": 13
+      },
+      {
+       "error_yd": 3.1554707782805846,
+       "horizon_s": 1.4,
+       "players": 1735,
+       "step": 14
+      },
+      {
+       "error_yd": 3.467443742356559,
+       "horizon_s": 1.5,
+       "players": 1431,
+       "step": 15
+      },
+      {
+       "error_yd": 3.758093459004688,
+       "horizon_s": 1.6,
+       "players": 1196,
+       "step": 16
+      },
+      {
+       "error_yd": 3.9478789948563855,
+       "horizon_s": 1.7,
+       "players": 973,
+       "step": 17
+      },
+      {
+       "error_yd": 4.23234552052934,
+       "horizon_s": 1.8,
+       "players": 831,
+       "step": 18
+      },
+      {
+       "error_yd": 4.533032841202762,
+       "horizon_s": 1.9,
+       "players": 713,
+       "step": 19
+      },
+      {
+       "error_yd": 4.839756350544355,
+       "horizon_s": 2.0,
+       "players": 622,
+       "step": 20
+      },
+      {
+       "error_yd": 5.1954144272686795,
+       "horizon_s": 2.1,
+       "players": 518,
+       "step": 21
+      },
+      {
+       "error_yd": 5.517868088919216,
+       "horizon_s": 2.2,
+       "players": 460,
+       "step": 22
+      },
+      {
+       "error_yd": 5.724941425465033,
+       "horizon_s": 2.3,
+       "players": 408,
+       "step": 23
+      },
+      {
+       "error_yd": 6.117943267151232,
+       "horizon_s": 2.4,
+       "players": 323,
+       "step": 24
+      }
+     ],
+     "slices": [
+      {
+       "ade_yd": 1.1822074379007603,
+       "fde_yd": 2.961677639641526,
+       "players": 3853,
+       "slice": "side",
+       "sufficient": true,
+       "value": "defense"
+      },
+      {
+       "ade_yd": 0.8955982900169382,
+       "fde_yd": 2.1586992166374315,
+       "players": 1687,
+       "slice": "side",
+       "sufficient": true,
+       "value": "offense"
+      },
+      {
+       "ade_yd": 1.1822074379007603,
+       "fde_yd": 2.961677639641526,
+       "players": 3853,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Defensive Coverage"
+      },
+      {
+       "ade_yd": 0.8955982900169382,
+       "fde_yd": 2.1586992166374315,
+       "players": 1687,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Targeted Receiver"
+      },
+      {
+       "ade_yd": 1.2802193500688355,
+       "fde_yd": 3.205882522649613,
+       "players": 1571,
+       "slice": "position",
+       "sufficient": true,
+       "value": "CB"
+      },
+      {
+       "ade_yd": 0.767414139766429,
+       "fde_yd": 1.9463548447067418,
+       "players": 35,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DE"
+      },
+      {
+       "ade_yd": 0.6142043065421066,
+       "fde_yd": 1.4415431499292841,
+       "players": 5,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DT"
+      },
+      {
+       "ade_yd": 0.217969353299543,
+       "fde_yd": 0.545590519123348,
+       "players": 11,
+       "slice": "position",
+       "sufficient": false,
+       "value": "FB"
+      },
+      {
+       "ade_yd": 1.4144366725940147,
+       "fde_yd": 3.5817313117069722,
+       "players": 613,
+       "slice": "position",
+       "sufficient": true,
+       "value": "FS"
+      },
+      {
+       "ade_yd": 0.883425117472746,
+       "fde_yd": 2.1781853912749107,
+       "players": 490,
+       "slice": "position",
+       "sufficient": true,
+       "value": "ILB"
+      },
+      {
+       "ade_yd": 1.033833627197876,
+       "fde_yd": 2.469404200603438,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "LB"
+      },
+      {
+       "ade_yd": 0.8423531214719404,
+       "fde_yd": 2.088559909332465,
+       "players": 299,
+       "slice": "position",
+       "sufficient": true,
+       "value": "MLB"
+      },
+      {
+       "ade_yd": 0.609747575541349,
+       "fde_yd": 1.339921317731391,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "NT"
+      },
+      {
+       "ade_yd": 0.8406783342816573,
+       "fde_yd": 2.0928831915702446,
+       "players": 285,
+       "slice": "position",
+       "sufficient": true,
+       "value": "OLB"
+      },
+      {
+       "ade_yd": 0.40933162541062734,
+       "fde_yd": 0.9437467620964743,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "QB"
+      },
+      {
+       "ade_yd": 0.474643350125929,
+       "fde_yd": 1.1599016248848957,
+       "players": 250,
+       "slice": "position",
+       "sufficient": true,
+       "value": "RB"
+      },
+      {
+       "ade_yd": 1.6258468205533354,
+       "fde_yd": 4.032072533820752,
+       "players": 16,
+       "slice": "position",
+       "sufficient": false,
+       "value": "S"
+      },
+      {
+       "ade_yd": 1.2958266378740824,
+       "fde_yd": 3.257583552629912,
+       "players": 543,
+       "slice": "position",
+       "sufficient": true,
+       "value": "SS"
+      },
+      {
+       "ade_yd": 0.6584167450768057,
+       "fde_yd": 1.5944518119578235,
+       "players": 422,
+       "slice": "position",
+       "sufficient": true,
+       "value": "TE"
+      },
+      {
+       "ade_yd": 1.1060871298821968,
+       "fde_yd": 2.658440339862415,
+       "players": 997,
+       "slice": "position",
+       "sufficient": true,
+       "value": "WR"
+      },
+      {
+       "ade_yd": 0.5555719345293049,
+       "fde_yd": 1.3470134737514974,
+       "players": 2545,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "1-10 frames"
+      },
+      {
+       "ade_yd": 1.3632527847296079,
+       "fde_yd": 3.4379525568523692,
+       "players": 2477,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "11-20 frames"
+      },
+      {
+       "ade_yd": 2.4617989427372304,
+       "fde_yd": 6.00214623549279,
+       "players": 518,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "21+ frames"
+      }
+     ],
+     "ade_interval": {
+      "lo": 1.0536749490524264,
+      "hi": 1.133719616922247,
+      "level": 0.95
+     },
+     "fde_interval": {
+      "lo": 2.6140094077698426,
+      "hi": 2.8132307922996573,
+      "level": 0.95
+     }
+    },
+    "cv-fd": {
+     "summary": {
+      "ade_yd": 1.1668731588514927,
+      "fde_yd": 2.8371184720835276,
+      "frames": 67888,
+      "players": 5540,
+      "plays": 1687,
+      "predictor": "trajectory-cv-fd-baseline-v1",
+      "split": "validation"
+     },
+     "horizon": [
+      {
+       "error_yd": 0.039526797948484696,
+       "horizon_s": 0.1,
+       "players": 5540,
+       "step": 1
+      },
+      {
+       "error_yd": 0.1162623573763588,
+       "horizon_s": 0.2,
+       "players": 5540,
+       "step": 2
+      },
+      {
+       "error_yd": 0.2309839463515732,
+       "horizon_s": 0.3,
+       "players": 5540,
+       "step": 3
+      },
+      {
+       "error_yd": 0.38291877961739007,
+       "horizon_s": 0.4,
+       "players": 5540,
+       "step": 4
+      },
+      {
+       "error_yd": 0.5701849299350807,
+       "horizon_s": 0.5,
+       "players": 5540,
+       "step": 5
+      },
+      {
+       "error_yd": 0.791341585430812,
+       "horizon_s": 0.6,
+       "players": 5514,
+       "step": 6
+      },
+      {
+       "error_yd": 1.0451138878419939,
+       "horizon_s": 0.7,
+       "players": 5309,
+       "step": 7
+      },
+      {
+       "error_yd": 1.32489787344164,
+       "horizon_s": 0.8,
+       "players": 4749,
+       "step": 8
+      },
+      {
+       "error_yd": 1.6422354779125459,
+       "horizon_s": 0.9,
+       "players": 4146,
+       "step": 9
+      },
+      {
+       "error_yd": 1.975865680402981,
+       "horizon_s": 1.0,
+       "players": 3562,
+       "step": 10
+      },
+      {
+       "error_yd": 2.302275300658877,
+       "horizon_s": 1.1,
+       "players": 2995,
+       "step": 11
+      },
+      {
+       "error_yd": 2.635571908300241,
+       "horizon_s": 1.2,
+       "players": 2535,
+       "step": 12
+      },
+      {
+       "error_yd": 2.9729733883881058,
+       "horizon_s": 1.3,
+       "players": 2168,
+       "step": 13
+      },
+      {
+       "error_yd": 3.2834385790284744,
+       "horizon_s": 1.4,
+       "players": 1735,
+       "step": 14
+      },
+      {
+       "error_yd": 3.598527277207381,
+       "horizon_s": 1.5,
+       "players": 1431,
+       "step": 15
+      },
+      {
+       "error_yd": 3.889920798634995,
+       "horizon_s": 1.6,
+       "players": 1196,
+       "step": 16
+      },
+      {
+       "error_yd": 4.071545046560538,
+       "horizon_s": 1.7,
+       "players": 973,
+       "step": 17
+      },
+      {
+       "error_yd": 4.357149934845536,
+       "horizon_s": 1.8,
+       "players": 831,
+       "step": 18
+      },
+      {
+       "error_yd": 4.658204130462714,
+       "horizon_s": 1.9,
+       "players": 713,
+       "step": 19
+      },
+      {
+       "error_yd": 4.9692115169843065,
+       "horizon_s": 2.0,
+       "players": 622,
+       "step": 20
+      },
+      {
+       "error_yd": 5.325859614632965,
+       "horizon_s": 2.1,
+       "players": 518,
+       "step": 21
+      },
+      {
+       "error_yd": 5.653588631509468,
+       "horizon_s": 2.2,
+       "players": 460,
+       "step": 22
+      },
+      {
+       "error_yd": 5.858963785306458,
+       "horizon_s": 2.3,
+       "players": 408,
+       "step": 23
+      },
+      {
+       "error_yd": 6.25492533072807,
+       "horizon_s": 2.4,
+       "players": 323,
+       "step": 24
+      }
+     ],
+     "slices": [
+      {
+       "ade_yd": 1.2487412833375198,
+       "fde_yd": 3.0695823257522528,
+       "players": 3853,
+       "slice": "side",
+       "sufficient": true,
+       "value": "defense"
+      },
+      {
+       "ade_yd": 0.9798916036382967,
+       "fde_yd": 2.306185912400304,
+       "players": 1687,
+       "slice": "side",
+       "sufficient": true,
+       "value": "offense"
+      },
+      {
+       "ade_yd": 1.2487412833375198,
+       "fde_yd": 3.0695823257522528,
+       "players": 3853,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Defensive Coverage"
+      },
+      {
+       "ade_yd": 0.9798916036382967,
+       "fde_yd": 2.306185912400304,
+       "players": 1687,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Targeted Receiver"
+      },
+      {
+       "ade_yd": 1.352804748865944,
+       "fde_yd": 3.326314523560706,
+       "players": 1571,
+       "slice": "position",
+       "sufficient": true,
+       "value": "CB"
+      },
+      {
+       "ade_yd": 0.778146528514941,
+       "fde_yd": 1.9622726937496895,
+       "players": 35,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DE"
+      },
+      {
+       "ade_yd": 0.5504920204814345,
+       "fde_yd": 1.3256319026974903,
+       "players": 5,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DT"
+      },
+      {
+       "ade_yd": 0.23989958090605168,
+       "fde_yd": 0.5816138608051316,
+       "players": 11,
+       "slice": "position",
+       "sufficient": false,
+       "value": "FB"
+      },
+      {
+       "ade_yd": 1.488086138901647,
+       "fde_yd": 3.7030279289010006,
+       "players": 613,
+       "slice": "position",
+       "sufficient": true,
+       "value": "FS"
+      },
+      {
+       "ade_yd": 0.9413728157117789,
+       "fde_yd": 2.267096691298931,
+       "players": 490,
+       "slice": "position",
+       "sufficient": true,
+       "value": "ILB"
+      },
+      {
+       "ade_yd": 1.1377046465760614,
+       "fde_yd": 2.6569775100079385,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "LB"
+      },
+      {
+       "ade_yd": 0.8974497919835474,
+       "fde_yd": 2.174229171776049,
+       "players": 299,
+       "slice": "position",
+       "sufficient": true,
+       "value": "MLB"
+      },
+      {
+       "ade_yd": 0.5943141815315945,
+       "fde_yd": 1.312444573101344,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "NT"
+      },
+      {
+       "ade_yd": 0.8883959466376522,
+       "fde_yd": 2.1630400886749865,
+       "players": 285,
+       "slice": "position",
+       "sufficient": true,
+       "value": "OLB"
+      },
+      {
+       "ade_yd": 0.4887825815712769,
+       "fde_yd": 1.0682691189829985,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "QB"
+      },
+      {
+       "ade_yd": 0.5246182405248503,
+       "fde_yd": 1.2438908808507105,
+       "players": 250,
+       "slice": "position",
+       "sufficient": true,
+       "value": "RB"
+      },
+      {
+       "ade_yd": 1.7158051725734595,
+       "fde_yd": 4.195737975743324,
+       "players": 16,
+       "slice": "position",
+       "sufficient": false,
+       "value": "S"
+      },
+      {
+       "ade_yd": 1.3657946793117057,
+       "fde_yd": 3.3715181863199213,
+       "players": 543,
+       "slice": "position",
+       "sufficient": true,
+       "value": "SS"
+      },
+      {
+       "ade_yd": 0.7328334325691869,
+       "fde_yd": 1.723058573570163,
+       "players": 422,
+       "slice": "position",
+       "sufficient": true,
+       "value": "TE"
+      },
+      {
+       "ade_yd": 1.2034947607077857,
+       "fde_yd": 2.8303801439660017,
+       "players": 997,
+       "slice": "position",
+       "sufficient": true,
+       "value": "WR"
+      },
+      {
+       "ade_yd": 0.6133659137145293,
+       "fde_yd": 1.445305562829032,
+       "players": 2545,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "1-10 frames"
+      },
+      {
+       "ade_yd": 1.4458616882857784,
+       "fde_yd": 3.577133130668823,
+       "players": 2477,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "11-20 frames"
+      },
+      {
+       "ade_yd": 2.552242563223784,
+       "fde_yd": 6.136631106710776,
+       "players": 518,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "21+ frames"
+      }
+     ],
+     "ade_interval": {
+      "lo": 1.1238877958107703,
+      "hi": 1.206212679166078,
+      "level": 0.95
+     },
+     "fde_interval": {
+      "lo": 2.7311881455162537,
+      "hi": 2.9334454630343565,
+      "level": 0.95
+     }
+    }
+   },
+   "test": {
+    "model": {
+     "summary": {
+      "ade_yd": 0.34807300761661536,
+      "fde_yd": 0.9537411007843619,
+      "frames": 61932,
+      "players": 5038,
+      "plays": 1559,
+      "predictor": "model",
+      "split": "test"
+     },
+     "horizon": [
+      {
+       "error_yd": 0.011360822774227218,
+       "horizon_s": 0.1,
+       "players": 5038,
+       "step": 1
+      },
+      {
+       "error_yd": 0.026947105916548704,
+       "horizon_s": 0.2,
+       "players": 5038,
+       "step": 2
+      },
+      {
+       "error_yd": 0.05198619727036553,
+       "horizon_s": 0.3,
+       "players": 5038,
+       "step": 3
+      },
+      {
+       "error_yd": 0.08760097832613022,
+       "horizon_s": 0.4,
+       "players": 5038,
+       "step": 4
+      },
+      {
+       "error_yd": 0.1355428218734025,
+       "horizon_s": 0.5,
+       "players": 5038,
+       "step": 5
+      },
+      {
+       "error_yd": 0.19669922985860153,
+       "horizon_s": 0.6,
+       "players": 5014,
+       "step": 6
+      },
+      {
+       "error_yd": 0.2705925661856078,
+       "horizon_s": 0.7,
+       "players": 4810,
+       "step": 7
+      },
+      {
+       "error_yd": 0.3580760411800259,
+       "horizon_s": 0.8,
+       "players": 4334,
+       "step": 8
+      },
+      {
+       "error_yd": 0.45385234218371723,
+       "horizon_s": 0.9,
+       "players": 3674,
+       "step": 9
+      },
+      {
+       "error_yd": 0.5622664726364416,
+       "horizon_s": 1.0,
+       "players": 3138,
+       "step": 10
+      },
+      {
+       "error_yd": 0.6771253364505153,
+       "horizon_s": 1.1,
+       "players": 2577,
+       "step": 11
+      },
+      {
+       "error_yd": 0.7979156881414359,
+       "horizon_s": 1.2,
+       "players": 2189,
+       "step": 12
+      },
+      {
+       "error_yd": 0.921450783768008,
+       "horizon_s": 1.3,
+       "players": 1872,
+       "step": 13
+      },
+      {
+       "error_yd": 1.0622751752448942,
+       "horizon_s": 1.4,
+       "players": 1612,
+       "step": 14
+      },
+      {
+       "error_yd": 1.1852911384864115,
+       "horizon_s": 1.5,
+       "players": 1367,
+       "step": 15
+      },
+      {
+       "error_yd": 1.3024817190818798,
+       "horizon_s": 1.6,
+       "players": 1173,
+       "step": 16
+      },
+      {
+       "error_yd": 1.415879273881566,
+       "horizon_s": 1.7,
+       "players": 1042,
+       "step": 17
+      },
+      {
+       "error_yd": 1.5388186534781385,
+       "horizon_s": 1.8,
+       "players": 895,
+       "step": 18
+      },
+      {
+       "error_yd": 1.646570636085557,
+       "horizon_s": 1.9,
+       "players": 735,
+       "step": 19
+      },
+      {
+       "error_yd": 1.7644687291326733,
+       "horizon_s": 2.0,
+       "players": 638,
+       "step": 20
+      },
+      {
+       "error_yd": 1.90054572638937,
+       "horizon_s": 2.1,
+       "players": 571,
+       "step": 21
+      },
+      {
+       "error_yd": 2.056859704362283,
+       "horizon_s": 2.2,
+       "players": 467,
+       "step": 22
+      },
+      {
+       "error_yd": 2.1428955625601325,
+       "horizon_s": 2.3,
+       "players": 349,
+       "step": 23
+      },
+      {
+       "error_yd": 2.223885819304091,
+       "horizon_s": 2.4,
+       "players": 285,
+       "step": 24
+      }
+     ],
+     "slices": [
+      {
+       "ade_yd": 0.37908077782166116,
+       "fde_yd": 1.0233175028133021,
+       "players": 3479,
+       "slice": "side",
+       "sufficient": true,
+       "value": "defense"
+      },
+      {
+       "ade_yd": 0.27887734851247525,
+       "fde_yd": 0.7984772761155466,
+       "players": 1559,
+       "slice": "side",
+       "sufficient": true,
+       "value": "offense"
+      },
+      {
+       "ade_yd": 0.37908077782166116,
+       "fde_yd": 1.0233175028133021,
+       "players": 3479,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Defensive Coverage"
+      },
+      {
+       "ade_yd": 0.27887734851247525,
+       "fde_yd": 0.7984772761155466,
+       "players": 1559,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Targeted Receiver"
+      },
+      {
+       "ade_yd": 0.40555329275254864,
+       "fde_yd": 1.1097797325012138,
+       "players": 1481,
+       "slice": "position",
+       "sufficient": true,
+       "value": "CB"
+      },
+      {
+       "ade_yd": 0.4450863284572974,
+       "fde_yd": 1.1689515046624552,
+       "players": 14,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DE"
+      },
+      {
+       "ade_yd": 0.4885362080827085,
+       "fde_yd": 1.2786146384048855,
+       "players": 4,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DT"
+      },
+      {
+       "ade_yd": 0.2597944211989632,
+       "fde_yd": 0.6633975354340814,
+       "players": 12,
+       "slice": "position",
+       "sufficient": false,
+       "value": "FB"
+      },
+      {
+       "ade_yd": 0.4470767352079354,
+       "fde_yd": 1.2037235852215014,
+       "players": 476,
+       "slice": "position",
+       "sufficient": true,
+       "value": "FS"
+      },
+      {
+       "ade_yd": 0.28707274520715403,
+       "fde_yd": 0.7435584829888809,
+       "players": 440,
+       "slice": "position",
+       "sufficient": true,
+       "value": "ILB"
+      },
+      {
+       "ade_yd": 0.2788608067447597,
+       "fde_yd": 0.7396483129590621,
+       "players": 265,
+       "slice": "position",
+       "sufficient": true,
+       "value": "MLB"
+      },
+      {
+       "ade_yd": 0.19746133369452373,
+       "fde_yd": 0.4815590214178025,
+       "players": 2,
+       "slice": "position",
+       "sufficient": false,
+       "value": "NT"
+      },
+      {
+       "ade_yd": 0.271158672759482,
+       "fde_yd": 0.7028061182689423,
+       "players": 272,
+       "slice": "position",
+       "sufficient": true,
+       "value": "OLB"
+      },
+      {
+       "ade_yd": 0.11424970419919411,
+       "fde_yd": 0.33894223372946863,
+       "players": 5,
+       "slice": "position",
+       "sufficient": false,
+       "value": "QB"
+      },
+      {
+       "ade_yd": 0.16186745873712235,
+       "fde_yd": 0.4245758669188368,
+       "players": 237,
+       "slice": "position",
+       "sufficient": true,
+       "value": "RB"
+      },
+      {
+       "ade_yd": 0.42640087375314517,
+       "fde_yd": 1.2225263222753386,
+       "players": 30,
+       "slice": "position",
+       "sufficient": false,
+       "value": "S"
+      },
+      {
+       "ade_yd": 0.42476498011164054,
+       "fde_yd": 1.1657368503527812,
+       "players": 508,
+       "slice": "position",
+       "sufficient": true,
+       "value": "SS"
+      },
+      {
+       "ade_yd": 0.18959485564256057,
+       "fde_yd": 0.4837993018301348,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "T"
+      },
+      {
+       "ade_yd": 0.20591971388575495,
+       "fde_yd": 0.5776893093882439,
+       "players": 386,
+       "slice": "position",
+       "sufficient": true,
+       "value": "TE"
+      },
+      {
+       "ade_yd": 0.339574246694876,
+       "fde_yd": 0.9823102913203938,
+       "players": 905,
+       "slice": "position",
+       "sufficient": true,
+       "value": "WR"
+      },
+      {
+       "ade_yd": 0.16273753477043515,
+       "fde_yd": 0.4229012891359743,
+       "players": 2461,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "1-10 frames"
+      },
+      {
+       "ade_yd": 0.43790025802218097,
+       "fde_yd": 1.2397084453226068,
+       "players": 2006,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "11-20 frames"
+      },
+      {
+       "ade_yd": 0.8312904057967991,
+       "fde_yd": 2.2370095479349095,
+       "players": 571,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "21+ frames"
+      }
+     ],
+     "ade_interval": {
+      "lo": 0.3337069266038278,
+      "hi": 0.36375420310034223,
+      "level": 0.95
+     },
+     "fde_interval": {
+      "lo": 0.9129035059995584,
+      "hi": 0.999597869612614,
+      "level": 0.95
+     }
+    },
+    "cv": {
+     "summary": {
+      "ade_yd": 1.0895702352668122,
+      "fde_yd": 2.691413679008206,
+      "frames": 61932,
+      "players": 5038,
+      "plays": 1559,
+      "predictor": "trajectory-cv-baseline-v1",
+      "split": "test"
+     },
+     "horizon": [
+      {
+       "error_yd": 0.02668119495335073,
+       "horizon_s": 0.1,
+       "players": 5038,
+       "step": 1
+      },
+      {
+       "error_yd": 0.09041757032648072,
+       "horizon_s": 0.2,
+       "players": 5038,
+       "step": 2
+      },
+      {
+       "error_yd": 0.19272546627161627,
+       "horizon_s": 0.3,
+       "players": 5038,
+       "step": 3
+      },
+      {
+       "error_yd": 0.3319915808834525,
+       "horizon_s": 0.4,
+       "players": 5038,
+       "step": 4
+      },
+      {
+       "error_yd": 0.5062377196469656,
+       "horizon_s": 0.5,
+       "players": 5038,
+       "step": 5
+      },
+      {
+       "error_yd": 0.7139927016668006,
+       "horizon_s": 0.6,
+       "players": 5014,
+       "step": 6
+      },
+      {
+       "error_yd": 0.9545471601014252,
+       "horizon_s": 0.7,
+       "players": 4810,
+       "step": 7
+      },
+      {
+       "error_yd": 1.2254340818339324,
+       "horizon_s": 0.8,
+       "players": 4334,
+       "step": 8
+      },
+      {
+       "error_yd": 1.5211260098247021,
+       "horizon_s": 0.9,
+       "players": 3674,
+       "step": 9
+      },
+      {
+       "error_yd": 1.8320326346039082,
+       "horizon_s": 1.0,
+       "players": 3138,
+       "step": 10
+      },
+      {
+       "error_yd": 2.154557889250225,
+       "horizon_s": 1.1,
+       "players": 2577,
+       "step": 11
+      },
+      {
+       "error_yd": 2.4745805149193663,
+       "horizon_s": 1.2,
+       "players": 2189,
+       "step": 12
+      },
+      {
+       "error_yd": 2.7809271905976014,
+       "horizon_s": 1.3,
+       "players": 1872,
+       "step": 13
+      },
+      {
+       "error_yd": 3.1137768950454916,
+       "horizon_s": 1.4,
+       "players": 1612,
+       "step": 14
+      },
+      {
+       "error_yd": 3.4280268568356536,
+       "horizon_s": 1.5,
+       "players": 1367,
+       "step": 15
+      },
+      {
+       "error_yd": 3.7045638401229954,
+       "horizon_s": 1.6,
+       "players": 1173,
+       "step": 16
+      },
+      {
+       "error_yd": 3.95873889483511,
+       "horizon_s": 1.7,
+       "players": 1042,
+       "step": 17
+      },
+      {
+       "error_yd": 4.193302663761312,
+       "horizon_s": 1.8,
+       "players": 895,
+       "step": 18
+      },
+      {
+       "error_yd": 4.499935810342148,
+       "horizon_s": 1.9,
+       "players": 735,
+       "step": 19
+      },
+      {
+       "error_yd": 4.807662630057961,
+       "horizon_s": 2.0,
+       "players": 638,
+       "step": 20
+      },
+      {
+       "error_yd": 5.129865517410559,
+       "horizon_s": 2.1,
+       "players": 571,
+       "step": 21
+      },
+      {
+       "error_yd": 5.343774062575452,
+       "horizon_s": 2.2,
+       "players": 467,
+       "step": 22
+      },
+      {
+       "error_yd": 5.667834453151618,
+       "horizon_s": 2.3,
+       "players": 349,
+       "step": 23
+      },
+      {
+       "error_yd": 5.834309130446283,
+       "horizon_s": 2.4,
+       "players": 285,
+       "step": 24
+      }
+     ],
+     "slices": [
+      {
+       "ade_yd": 1.1861373025790893,
+       "fde_yd": 2.9568342992419976,
+       "players": 3479,
+       "slice": "side",
+       "sufficient": true,
+       "value": "defense"
+      },
+      {
+       "ade_yd": 0.8740751568964392,
+       "fde_yd": 2.0991119870304247,
+       "players": 1559,
+       "slice": "side",
+       "sufficient": true,
+       "value": "offense"
+      },
+      {
+       "ade_yd": 1.1861373025790893,
+       "fde_yd": 2.9568342992419976,
+       "players": 3479,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Defensive Coverage"
+      },
+      {
+       "ade_yd": 0.8740751568964392,
+       "fde_yd": 2.0991119870304247,
+       "players": 1559,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Targeted Receiver"
+      },
+      {
+       "ade_yd": 1.2595496489835583,
+       "fde_yd": 3.142644588419141,
+       "players": 1481,
+       "slice": "position",
+       "sufficient": true,
+       "value": "CB"
+      },
+      {
+       "ade_yd": 0.9238116207628365,
+       "fde_yd": 2.181497651760073,
+       "players": 14,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DE"
+      },
+      {
+       "ade_yd": 1.0905362109285068,
+       "fde_yd": 2.329820569299567,
+       "players": 4,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DT"
+      },
+      {
+       "ade_yd": 0.5212167361984343,
+       "fde_yd": 1.2488766103043387,
+       "players": 12,
+       "slice": "position",
+       "sufficient": false,
+       "value": "FB"
+      },
+      {
+       "ade_yd": 1.4379060838866076,
+       "fde_yd": 3.6056734748215407,
+       "players": 476,
+       "slice": "position",
+       "sufficient": true,
+       "value": "FS"
+      },
+      {
+       "ade_yd": 0.8772063766723839,
+       "fde_yd": 2.1518267390308567,
+       "players": 440,
+       "slice": "position",
+       "sufficient": true,
+       "value": "ILB"
+      },
+      {
+       "ade_yd": 0.8520079786916749,
+       "fde_yd": 2.1438460051055452,
+       "players": 265,
+       "slice": "position",
+       "sufficient": true,
+       "value": "MLB"
+      },
+      {
+       "ade_yd": 0.7122135486159196,
+       "fde_yd": 1.7183332418561015,
+       "players": 2,
+       "slice": "position",
+       "sufficient": false,
+       "value": "NT"
+      },
+      {
+       "ade_yd": 0.8568060562419241,
+       "fde_yd": 2.100038289279855,
+       "players": 272,
+       "slice": "position",
+       "sufficient": true,
+       "value": "OLB"
+      },
+      {
+       "ade_yd": 0.41999275006171627,
+       "fde_yd": 0.9062198009840241,
+       "players": 5,
+       "slice": "position",
+       "sufficient": false,
+       "value": "QB"
+      },
+      {
+       "ade_yd": 0.42813192271261963,
+       "fde_yd": 1.0270213534204469,
+       "players": 237,
+       "slice": "position",
+       "sufficient": true,
+       "value": "RB"
+      },
+      {
+       "ade_yd": 1.315658515894914,
+       "fde_yd": 3.3041678806446315,
+       "players": 30,
+       "slice": "position",
+       "sufficient": false,
+       "value": "S"
+      },
+      {
+       "ade_yd": 1.3659141327023947,
+       "fde_yd": 3.4201055383039685,
+       "players": 508,
+       "slice": "position",
+       "sufficient": true,
+       "value": "SS"
+      },
+      {
+       "ade_yd": 0.23175864453586045,
+       "fde_yd": 0.5982126866454713,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "T"
+      },
+      {
+       "ade_yd": 0.588697751918474,
+       "fde_yd": 1.4014517332427052,
+       "players": 386,
+       "slice": "position",
+       "sufficient": true,
+       "value": "TE"
+      },
+      {
+       "ade_yd": 1.1107727747388312,
+       "fde_yd": 2.67219415204201,
+       "players": 905,
+       "slice": "position",
+       "sufficient": true,
+       "value": "WR"
+      },
+      {
+       "ade_yd": 0.5525224811031291,
+       "fde_yd": 1.3377615316919442,
+       "players": 2461,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "1-10 frames"
+      },
+      {
+       "ade_yd": 1.3809243237030155,
+       "fde_yd": 3.4704130163953764,
+       "players": 2006,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "11-20 frames"
+      },
+      {
+       "ade_yd": 2.380670448215675,
+       "fde_yd": 5.788901006060143,
+       "players": 571,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "21+ frames"
+      }
+     ],
+     "ade_interval": {
+      "lo": 1.0503601912539653,
+      "hi": 1.1295427741523445,
+      "level": 0.95
+     },
+     "fde_interval": {
+      "lo": 2.5905067346115995,
+      "hi": 2.789205212535706,
+      "level": 0.95
+     }
+    },
+    "cv-fd": {
+     "summary": {
+      "ade_yd": 1.160184230037609,
+      "fde_yd": 2.809364719158182,
+      "frames": 61932,
+      "players": 5038,
+      "plays": 1559,
+      "predictor": "trajectory-cv-fd-baseline-v1",
+      "split": "test"
+     },
+     "horizon": [
+      {
+       "error_yd": 0.03953409528008386,
+       "horizon_s": 0.1,
+       "players": 5038,
+       "step": 1
+      },
+      {
+       "error_yd": 0.11588204667433742,
+       "horizon_s": 0.2,
+       "players": 5038,
+       "step": 2
+      },
+      {
+       "error_yd": 0.23021747081059424,
+       "horizon_s": 0.3,
+       "players": 5038,
+       "step": 3
+      },
+      {
+       "error_yd": 0.38110963664527964,
+       "horizon_s": 0.4,
+       "players": 5038,
+       "step": 4
+      },
+      {
+       "error_yd": 0.5664958436868257,
+       "horizon_s": 0.5,
+       "players": 5038,
+       "step": 5
+      },
+      {
+       "error_yd": 0.7848336034250801,
+       "horizon_s": 0.6,
+       "players": 5014,
+       "step": 6
+      },
+      {
+       "error_yd": 1.0350450101325566,
+       "horizon_s": 0.7,
+       "players": 4810,
+       "step": 7
+      },
+      {
+       "error_yd": 1.3147437391340244,
+       "horizon_s": 0.8,
+       "players": 4334,
+       "step": 8
+      },
+      {
+       "error_yd": 1.6186374576765108,
+       "horizon_s": 0.9,
+       "players": 3674,
+       "step": 9
+      },
+      {
+       "error_yd": 1.9357098771534698,
+       "horizon_s": 1.0,
+       "players": 3138,
+       "step": 10
+      },
+      {
+       "error_yd": 2.2652567517139865,
+       "horizon_s": 1.1,
+       "players": 2577,
+       "step": 11
+      },
+      {
+       "error_yd": 2.5907939641402966,
+       "horizon_s": 1.2,
+       "players": 2189,
+       "step": 12
+      },
+      {
+       "error_yd": 2.902087015300278,
+       "horizon_s": 1.3,
+       "players": 1872,
+       "step": 13
+      },
+      {
+       "error_yd": 3.24051070889358,
+       "horizon_s": 1.4,
+       "players": 1612,
+       "step": 14
+      },
+      {
+       "error_yd": 3.5574862847016084,
+       "horizon_s": 1.5,
+       "players": 1367,
+       "step": 15
+      },
+      {
+       "error_yd": 3.8369125579503565,
+       "horizon_s": 1.6,
+       "players": 1173,
+       "step": 16
+      },
+      {
+       "error_yd": 4.090927084122864,
+       "horizon_s": 1.7,
+       "players": 1042,
+       "step": 17
+      },
+      {
+       "error_yd": 4.3298483513530845,
+       "horizon_s": 1.8,
+       "players": 895,
+       "step": 18
+      },
+      {
+       "error_yd": 4.634286309160052,
+       "horizon_s": 1.9,
+       "players": 735,
+       "step": 19
+      },
+      {
+       "error_yd": 4.946698331456332,
+       "horizon_s": 2.0,
+       "players": 638,
+       "step": 20
+      },
+      {
+       "error_yd": 5.269284811184059,
+       "horizon_s": 2.1,
+       "players": 571,
+       "step": 21
+      },
+      {
+       "error_yd": 5.48306886228311,
+       "horizon_s": 2.2,
+       "players": 467,
+       "step": 22
+      },
+      {
+       "error_yd": 5.803311603209722,
+       "horizon_s": 2.3,
+       "players": 349,
+       "step": 23
+      },
+      {
+       "error_yd": 5.96748769446677,
+       "horizon_s": 2.4,
+       "players": 285,
+       "step": 24
+      }
+     ],
+     "slices": [
+      {
+       "ade_yd": 1.2523029359785884,
+       "fde_yd": 3.0647638658356318,
+       "players": 3479,
+       "slice": "side",
+       "sufficient": true,
+       "value": "defense"
+      },
+      {
+       "ade_yd": 0.9546159311481494,
+       "fde_yd": 2.2394265335963808,
+       "players": 1559,
+       "slice": "side",
+       "sufficient": true,
+       "value": "offense"
+      },
+      {
+       "ade_yd": 1.2523029359785884,
+       "fde_yd": 3.0647638658356318,
+       "players": 3479,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Defensive Coverage"
+      },
+      {
+       "ade_yd": 0.9546159311481494,
+       "fde_yd": 2.2394265335963808,
+       "players": 1559,
+       "slice": "role",
+       "sufficient": true,
+       "value": "Targeted Receiver"
+      },
+      {
+       "ade_yd": 1.3280781089785423,
+       "fde_yd": 3.255176524589034,
+       "players": 1481,
+       "slice": "position",
+       "sufficient": true,
+       "value": "CB"
+      },
+      {
+       "ade_yd": 0.9381991822444807,
+       "fde_yd": 2.2073255654042896,
+       "players": 14,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DE"
+      },
+      {
+       "ade_yd": 1.0384335686966035,
+       "fde_yd": 2.219600115996649,
+       "players": 4,
+       "slice": "position",
+       "sufficient": false,
+       "value": "DT"
+      },
+      {
+       "ade_yd": 0.5715258952778549,
+       "fde_yd": 1.3362434037002506,
+       "players": 12,
+       "slice": "position",
+       "sufficient": false,
+       "value": "FB"
+      },
+      {
+       "ade_yd": 1.5140122724897052,
+       "fde_yd": 3.7292392179563456,
+       "players": 476,
+       "slice": "position",
+       "sufficient": true,
+       "value": "FS"
+      },
+      {
+       "ade_yd": 0.936566219157209,
+       "fde_yd": 2.248103016474699,
+       "players": 440,
+       "slice": "position",
+       "sufficient": true,
+       "value": "ILB"
+      },
+      {
+       "ade_yd": 0.9021284141228025,
+       "fde_yd": 2.2195244898586255,
+       "players": 265,
+       "slice": "position",
+       "sufficient": true,
+       "value": "MLB"
+      },
+      {
+       "ade_yd": 0.7168376266461485,
+       "fde_yd": 1.7251148144406967,
+       "players": 2,
+       "slice": "position",
+       "sufficient": false,
+       "value": "NT"
+      },
+      {
+       "ade_yd": 0.9149332416423169,
+       "fde_yd": 2.1954186304111296,
+       "players": 272,
+       "slice": "position",
+       "sufficient": true,
+       "value": "OLB"
+      },
+      {
+       "ade_yd": 0.5038029703008108,
+       "fde_yd": 1.0604565686327547,
+       "players": 5,
+       "slice": "position",
+       "sufficient": false,
+       "value": "QB"
+      },
+      {
+       "ade_yd": 0.47481027714760765,
+       "fde_yd": 1.1073471538468709,
+       "players": 237,
+       "slice": "position",
+       "sufficient": true,
+       "value": "RB"
+      },
+      {
+       "ade_yd": 1.3910691404333408,
+       "fde_yd": 3.4313772742930295,
+       "players": 30,
+       "slice": "position",
+       "sufficient": false,
+       "value": "S"
+      },
+      {
+       "ade_yd": 1.438361162539066,
+       "fde_yd": 3.5403364129581956,
+       "players": 508,
+       "slice": "position",
+       "sufficient": true,
+       "value": "SS"
+      },
+      {
+       "ade_yd": 0.2909723592080796,
+       "fde_yd": 0.7128193020685561,
+       "players": 1,
+       "slice": "position",
+       "sufficient": false,
+       "value": "T"
+      },
+      {
+       "ade_yd": 0.6575110548126298,
+       "fde_yd": 1.5176925385008324,
+       "players": 386,
+       "slice": "position",
+       "sufficient": true,
+       "value": "TE"
+      },
+      {
+       "ade_yd": 1.2047516886968799,
+       "fde_yd": 2.8376441409827198,
+       "players": 905,
+       "slice": "position",
+       "sufficient": true,
+       "value": "WR"
+      },
+      {
+       "ade_yd": 0.6094771892529565,
+       "fde_yd": 1.4340934213475622,
+       "players": 2461,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "1-10 frames"
+      },
+      {
+       "ade_yd": 1.4630859805105858,
+       "fde_yd": 3.607539659839305,
+       "players": 2006,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "11-20 frames"
+      },
+      {
+       "ade_yd": 2.469587235155364,
+       "fde_yd": 5.932663725998111,
+       "players": 571,
+       "slice": "supplied_horizon",
+       "sufficient": true,
+       "value": "21+ frames"
+      }
+     ],
+     "ade_interval": {
+      "lo": 1.1201139187737825,
+      "hi": 1.20155460398682,
+      "level": 0.95
+     },
+     "fde_interval": {
+      "lo": 2.707760848657628,
+      "hi": 2.9086338918348265,
+      "level": 0.95
+     }
+    }
+   }
+  }
+ },
+ "latency": {
+  "cpu": {
+   "model_version": "trajectory-gnn-transformer-v1",
+   "operation": "predict_play: feature build + forward pass, one play per call, warm",
+   "timing_scope": "model_only",
+   "excludes": "data loading, HTTP, JSON serialization",
+   "device": "cpu",
+   "hardware": "Apple M1 Pro (arm64, Darwin)",
+   "batch_size": 1,
+   "plays": 200,
+   "target_players": 655,
+   "warmup_calls": 10,
+   "p50_ms": 21.61,
+   "p95_ms": 33.51,
+   "p99_ms": 42.02,
+   "mean_ms": 22.0,
+   "torch_threads": 6,
+   "measured_at": "2026-10-01T03:32:04+00:00"
+  },
+  "mps": {
+   "model_version": "trajectory-gnn-transformer-v1",
+   "operation": "predict_play: feature build + forward pass, one play per call, warm",
+   "timing_scope": "model_only",
+   "excludes": "data loading, HTTP, JSON serialization",
+   "device": "mps",
+   "hardware": "Apple M1 Pro (arm64, Darwin)",
+   "batch_size": 1,
+   "plays": 200,
+   "target_players": 655,
+   "warmup_calls": 10,
+   "p50_ms": 24.06,
+   "p95_ms": 37.09,
+   "p99_ms": 229.33,
+   "mean_ms": 29.56,
+   "torch_threads": 6,
+   "measured_at": "2026-10-01T03:32:15+00:00"
+  }
+ },
+ "ablation_temporal_only": {
+  "run_id": "trajectory-temporal-only-20261001T033354Z-acabae",
+  "parameters": 230265,
+  "best_epoch": 29,
+  "train_seconds": 355.5,
+  "evaluated_splits": [
+   "validation"
+  ],
+  "validation": {
+   "split": "validation",
+   "ade_yd": 0.3539636773477381,
+   "fde_yd": 0.9815456733179055,
+   "players": 5540,
+   "frames": 67888,
+   "plays": 1687,
+   "predictor": "model"
+  },
+  "paired_validation_gnn_minus_temporal": {
+   "ade_difference_yd": {
+    "mean": 0.002376456047772823,
+    "lo": -0.002359974554934271,
+    "hi": 0.0068877849448484635,
+    "level": 0.95
+   },
+   "fde_difference_yd": {
+    "mean": -0.004435380604179037,
+    "lo": -0.018471256166941775,
+    "hi": 0.008161484985742925,
+    "level": 0.95
+   }
+  }
+ },
+ "embedding_sanity": {
+  "model_version": "trajectory-gnn-transformer-v1",
+  "k": 10,
+  "queries": "test split plays; corpus = train split",
+  "label_agreement_at_k": [
+   {
+    "label": "offense_formation",
+    "learned": 0.5831,
+    "queries": 1559,
+    "metadata_baseline": 0.5561,
+    "random": 0.5461
+   },
+   {
+    "label": "receiver_alignment",
+    "learned": 0.3999,
+    "queries": 1559,
+    "metadata_baseline": 0.3735,
+    "random": 0.357
+   },
+   {
+    "label": "team_coverage_man_zone",
+    "learned": 0.679,
+    "queries": 1559,
+    "metadata_baseline": 0.6372,
+    "random": 0.6008
+   },
+   {
+    "label": "team_coverage_type",
+    "learned": 0.2707,
+    "queries": 1559,
+    "metadata_baseline": 0.2388,
+    "random": 0.2108
+   },
+   {
+    "label": "route_of_targeted_receiver",
+    "learned": 0.6886,
+    "queries": 1558,
+    "metadata_baseline": 0.1287,
+    "random": 0.1193
+   }
+  ],
+  "generated_at": "2026-10-01T03:33:25+00:00"
+ }
+}

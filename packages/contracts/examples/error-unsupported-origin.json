@@ -1,0 +1,12 @@
+{
+  "error": {
+    "code": "unsupported_prediction",
+    "details": {
+      "origin_frame_id": 23,
+      "reason": "unsupported_origin"
+    },
+    "message": "trajectory-test-v1 forecasts only from the last observed frame (23); frame 1 was requested.",
+    "request_id": "example",
+    "status": 422
+  }
+}

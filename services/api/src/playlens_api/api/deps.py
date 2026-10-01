@@ -1,6 +1,7 @@
 from fastapi import Request
 
 from ..errors import DatasetUnavailable
+from ..services.models import ModelRegistry, PredictionService
 from ..services.plays import PlayService
 
 
@@ -13,3 +14,12 @@ def get_play_service(request: Request) -> PlayService:
         )
         raise DatasetUnavailable(reason)
     return service
+
+
+def get_model_registry(request: Request) -> ModelRegistry:
+    registry: ModelRegistry = request.app.state.model_registry
+    return registry
+
+
+def get_prediction_service(request: Request) -> PredictionService:
+    return PredictionService(get_model_registry(request), get_play_service(request))

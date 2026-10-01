@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "model_unavailable",
+    "details": null,
+    "message": "No trajectory model is loaded. Train one with `pnpm ml:train`, which exports artifacts/models/<version>/, then restart the API.",
+    "request_id": "example",
+    "status": 503
+  }
+}

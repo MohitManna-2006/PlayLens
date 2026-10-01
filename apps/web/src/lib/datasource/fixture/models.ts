@@ -54,8 +54,11 @@ export function fixtureModels(corpusSize: number): ModelInfo[] {
         uncertainty_note: `${CV_SAMPLES} sampled futures from assumed velocity noise (heading σ ${HEADING_SD_DEG}°, speed σ ${SPEED_SD * 100}%). Nominal and uncalibrated.`,
         origin_rule: "Any frame from the snap onward whose previous frame is tracked.",
         origin_after_snap: true,
+        origin: "any_frame",
       },
       retrieval: null,
+      provenance: null,
+      metrics: [],
     },
     {
       model_version: DESCRIPTOR_MODEL,
@@ -68,6 +71,8 @@ export function fixtureModels(corpusSize: number): ModelInfo[] {
       evaluation_status: "pending",
       trajectory: null,
       retrieval: { representation: "Handcrafted formation descriptor (88 dims)", distance: "cosine", index: "exact", corpus_size: corpusSize },
+      provenance: null,
+      metrics: [],
     },
     {
       model_version: MOCK_MODEL,
@@ -80,6 +85,8 @@ export function fixtureModels(corpusSize: number): ModelInfo[] {
       evaluation_status: "unavailable",
       trajectory: null,
       retrieval: null,
+      provenance: null,
+      metrics: [],
     },
   ];
 }

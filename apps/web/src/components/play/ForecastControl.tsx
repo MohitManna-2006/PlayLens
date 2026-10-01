@@ -4,7 +4,7 @@ import Link from "next/link";
 import { StatusState } from "@/components/ui/StatusState";
 import type { ModelInfo, TrajectoryPrediction } from "@/lib/contracts";
 import { fixed, ms } from "@/lib/format";
-import { inputWindow, originProblem, validHorizon } from "@/lib/play/forecast";
+import { inputWindow, isFixedOrigin, originProblem, validHorizon, type ActualComparison } from "@/lib/play/forecast";
 import type { TrackingSeries } from "@/lib/tracking/series";
 
 export interface PinnedForecast {
@@ -38,10 +38,18 @@ export function DashSample() {
   );
 }
 
+const SPLIT_TEXT: Record<string, string> = {
+  train: "This play's game was in the training split, so the model has seen it.",
+  validation: "This play's game was in the validation split (used to pick the checkpoint, not to fit weights).",
+  test: "This play's game was held out in the test split.",
+  unknown: "Split membership is unknown for this play.",
+};
+
 /**
  * Compact model control group (§7 forecast review). Shows the observed input
- * window, model version, and horizon before any result; changing the origin
- * requires an explicit Update forecast.
+ * window, model version, and horizon before any result. Pinned-origin models
+ * need an explicit Update forecast after the origin moves; fixed-origin models
+ * always forecast from the last observed frame.
  */
 export function ForecastControl({
   model,
@@ -49,6 +57,10 @@ export function ForecastControl({
   frameIndex,
   selectedId,
   state,
+  originIndex,
+  actualFutureShown,
+  comparison,
+  comparisonPending,
   onHorizon,
   onRun,
   onReturnToOrigin,
@@ -61,6 +73,11 @@ export function ForecastControl({
   frameIndex: number;
   selectedId: string | null;
   state: ForecastState;
+  /** Where a new forecast would start: the current frame, or the last observed frame for fixed-origin models. */
+  originIndex: number;
+  actualFutureShown: boolean;
+  comparison: ActualComparison | null;
+  comparisonPending: boolean;
   onHorizon: (h: number) => void;
   onRun: (originIndex: number) => void;
   onReturnToOrigin: () => void;
@@ -69,12 +86,13 @@ export function ForecastControl({
   onClose: () => void;
 }) {
   const traj = model?.trajectory ?? null;
+  const fixed_ = isFixedOrigin(model);
   const pinned = state.pinned;
-  const currentProblem = originProblem(series, frameIndex, model);
+  const currentProblem = originProblem(series, originIndex, model);
   const beforeOrigin = pinned?.status === "ready" && frameIndex < pinned.originIndex;
-  const showOriginIndex = pinned ? pinned.originIndex : frameIndex;
-  const win = inputWindow(series, showOriginIndex, model);
-  const originMoved = !!pinned && frameIndex !== pinned.originIndex && !beforeOrigin;
+  const showOriginIndex = pinned ? pinned.originIndex : originIndex;
+  const win = pinned?.result ? [pinned.result.input_window.start_frame_id, pinned.result.input_window.end_frame_id] : inputWindow(series, showOriginIndex, model);
+  const originMoved = !fixed_ && !!pinned && frameIndex !== pinned.originIndex && !beforeOrigin;
   const horizonChanged = pinned && pinned.horizon !== state.horizon;
   const result = pinned?.status === "ready" ? pinned.result : undefined;
   const playerResult = result && selectedId ? result.players.find((p) => p.player_id === selectedId) : undefined;
@@ -106,7 +124,7 @@ export function ForecastControl({
         <dt className="text-fg-2">Origin</dt>
         <dd className="num text-meta text-fg">
           Frame {series.frameIds[showOriginIndex]}
-          <span className="ml-1 font-sans text-caption text-muted">{pinned ? "pinned" : "current frame"}</span>
+          <span className="ml-1 font-sans text-caption text-muted">{fixed_ ? "last observed" : pinned ? "pinned" : "current frame"}</span>
         </dd>
         <dt className="text-fg-2">Input</dt>
         <dd className="num text-meta text-fg">
@@ -131,9 +149,9 @@ export function ForecastControl({
             type="button"
             className="btn btn-primary w-full"
             disabled={!!currentProblem}
-            onClick={() => onRun(frameIndex)}
+            onClick={() => onRun(originIndex)}
           >
-            Run forecast from frame {series.frameIds[frameIndex]}
+            Run forecast from frame {series.frameIds[originIndex]}
           </button>
           {currentProblem && <p className="mt-1 text-caption text-muted">{currentProblem}</p>}
           {!currentProblem && <p className="mt-1 text-caption text-muted">{traj.origin_rule}</p>}
@@ -186,10 +204,37 @@ export function ForecastControl({
 
       {result && !beforeOrigin && (
         <div className="space-y-2">
+          {fixed_ && (
+            <>
+              <p className="text-body-2 text-fg-2">
+                Predicted paths for {result.players.length} target {result.players.length === 1 ? "player" : "players"}
+                {selectedId && playerResult ? "; the selected player is emphasized." : ". Select one to emphasize it."}
+              </p>
+              <p className="text-caption text-muted">{SPLIT_TEXT[result.play_split]}</p>
+              {comparison ? (
+                <p className="text-body-2 text-fg-2">
+                  Against the held-out actual future: <span className="num text-fg">ADE {fixed(comparison.ade, 2)} yd</span>,{" "}
+                  <span className="num text-fg">FDE {fixed(comparison.fde, 2)} yd</span>
+                  <span className="block text-caption text-muted">
+                    {comparison.players} players, {comparison.points} future points; computed in the browser with the evaluation definitions.
+                  </span>
+                </p>
+              ) : comparisonPending ? (
+                <p className="text-caption text-muted">Loading the held-out actual future to score this forecast…</p>
+              ) : null}
+              {!playerResult && (
+                <p className="text-caption text-muted">
+                  Latency <span className="num">{ms(result.latency_ms)}</span> · {result.latency_scope}
+                </p>
+              )}
+            </>
+          )}
           {!selectedId ? (
-            <p className="text-body-2 text-fg-2">Select a player to show their predicted path.</p>
+            fixed_ ? null : <p className="text-body-2 text-fg-2">Select a player to show their predicted path.</p>
           ) : !playerResult || playerResult.path.length === 0 ? (
-            <p className="text-body-2 text-fg-2">No prediction for this player: not tracked through the input window.</p>
+            <p className="text-body-2 text-fg-2">
+              {fixed_ ? "This player is not forecast: the model predicts only the flagged target players." : "No prediction for this player: not tracked through the input window."}
+            </p>
           ) : (
             <dl className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-1 text-body-2">
               <dt className="text-fg-2">Valid horizon</dt>
@@ -213,10 +258,14 @@ export function ForecastControl({
             <p className="text-caption text-muted">This model does not output uncertainty.</p>
           )}
           <label className="flex items-start gap-2 text-body-2">
-            <input type="checkbox" className="mt-0.5" checked={state.showObservedFuture} onChange={(e) => onObservedFuture(e.target.checked)} />
+            <input type="checkbox" className="mt-0.5" checked={actualFutureShown} onChange={(e) => onObservedFuture(e.target.checked)} />
             <span>
-              <span className="block text-fg">Show observed future</span>
-              <span className="block text-caption text-muted">Tracked positions after the origin. Never part of the model input.</span>
+              <span className="block text-fg">{fixed_ ? "Show actual future (held out)" : "Show observed future"}</span>
+              <span className="block text-caption text-muted">
+                {fixed_
+                  ? "Ground-truth positions from the dataset's output files, drawn solid. Never part of the model input."
+                  : "Tracked positions after the origin. Never part of the model input."}
+              </span>
             </span>
           </label>
           {result.warnings.map((w) => (

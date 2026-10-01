@@ -330,6 +330,8 @@ export const ModelInfoSchema = z.object({
       uncertainty_note: z.string().nullable(),
       origin_rule: z.string(),
       origin_after_snap: z.boolean(),
+      /** any_frame: the user pins the origin. last_observed_frame: forecasts start where observation ends. */
+      origin: z.enum(["any_frame", "last_observed_frame"]),
     })
     .nullable(),
   retrieval: z
@@ -340,6 +342,31 @@ export const ModelInfoSchema = z.object({
       corpus_size: z.number().int(),
     })
     .nullable(),
+  provenance: z
+    .object({
+      model_name: z.string(),
+      run_id: z.string().nullable(),
+      mlflow_run_id: z.string().nullable(),
+      dataset_version: z.string(),
+      split_version: z.string(),
+      created_at: z.string().nullable(),
+      parameters: z.number().int(),
+      weights_bytes: z.number().int(),
+      git_commit: z.string().nullable(),
+    })
+    .nullable(),
+  /** Recorded held-out metrics, next to the constant-velocity baseline on the same players. */
+  metrics: z.array(
+    z.object({
+      split: z.enum(["validation", "test"]),
+      ade_yd: z.number(),
+      fde_yd: z.number(),
+      players: z.number().int(),
+      baseline_model_version: z.string(),
+      baseline_ade_yd: z.number(),
+      baseline_fde_yd: z.number(),
+    }),
+  ),
 });
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;
 
@@ -350,8 +377,9 @@ export type PathPoint = z.infer<typeof PathPointSchema>;
 
 export const PredictedPlayerSchema = z.object({
   player_id: z.string(),
-  /** Positions at origin + (k+1)·step_s, source coordinates. */
+  /** Positions at origin + (k+1)·step_s, canonical coordinates. */
   path: z.array(PathPointSchema),
+  /** True where the play supplies an actual position for comparison (real data) or the model is valid (fixture). */
   valid: z.array(z.boolean()),
   /** Discrete sampled futures, each aligned with `path`. Present only when uncertainty.kind === "samples". */
   samples: z.array(z.array(PathPointSchema)).nullable(),
@@ -366,6 +394,7 @@ export const TrajectoryUncertaintySchema = z.object({
 
 export const TrajectoryRequestSchema = z.object({
   play_id: z.string(),
+  model_version: z.string().nullable().optional(),
   origin_frame_id: z.number().int(),
   horizon_s: z.number().positive(),
   player_ids: z.array(z.string()).nullable(),
@@ -375,11 +404,20 @@ export type TrajectoryRequest = z.infer<typeof TrajectoryRequestSchema>;
 export const TrajectoryPredictionSchema = z.object({
   request_id: z.string(),
   play_id: z.string(),
+  model_name: z.string(),
   model_version: z.string(),
+  dataset_version: z.string(),
+  split_version: z.string(),
+  /** Partition of this play's game when the model was trained; "train" means the model saw it. */
+  play_split: z.enum(["train", "validation", "test", "unknown"]),
   origin_frame_id: z.number().int(),
   input_window: z.object({ start_frame_id: z.number().int(), end_frame_id: z.number().int() }),
   horizon_s: z.number(),
   step_s: z.number().positive(),
+  /** Frame identifier of each predicted step: output-file frame_id (real data) or tracking frame_id (fixture). */
+  future_frame_ids: z.array(z.number().int()),
+  /** Future frames the dataset supplies for this play, when known. */
+  target_horizon_frames: z.number().int().nullable(),
   players: z.array(PredictedPlayerSchema),
   uncertainty: TrajectoryUncertaintySchema,
   latency_ms: z.number(),

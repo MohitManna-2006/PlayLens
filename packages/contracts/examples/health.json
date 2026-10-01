@@ -6,6 +6,10 @@
     "play_count": 6,
     "subset": "dev"
   },
+  "models": {
+    "errors": {},
+    "loaded": []
+  },
   "service": "playlens-api",
   "status": "ok",
   "version": "0.2.0"

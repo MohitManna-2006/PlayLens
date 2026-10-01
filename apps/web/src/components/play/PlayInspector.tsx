@@ -182,7 +182,7 @@ export function PlayInspector({
         </>
       )}
 
-      {track && <div className="mt-6 border-l-2 border-dashed border-accent pl-3">{forecast}</div>}
+      <div className="mt-6 border-l-2 border-dashed border-accent pl-3">{forecast}</div>
 
       {track && (
         <div className="mt-4">
@@ -314,11 +314,7 @@ function ModelAvailability({
     {
       task: "Trajectory forecast",
       model: find("trajectory"),
-      status: find("trajectory")
-        ? series?.snapIndex !== null && series && find("trajectory")!.trajectory?.origin_after_snap
-          ? `Origins from frame ${series.frameIds[series.snapIndex!]}`
-          : "Available"
-        : "No model served",
+      status: trajectoryStatus(find("trajectory"), series),
     },
     {
       task: "Similar plays",
@@ -357,4 +353,16 @@ function ModelAvailability({
       ))}
     </ul>
   );
+}
+
+function trajectoryStatus(model: ModelInfo | null, series: TrackingSeries | null): string {
+  if (!model) return "No model served";
+  if (model.trajectory?.origin === "last_observed_frame") {
+    const test = model.metrics.find((m) => m.split === "test");
+    return `From the last observed frame${
+      test ? ` · test ADE ${fixed(test.ade_yd, 2)} yd vs constant velocity ${fixed(test.baseline_ade_yd, 2)} yd` : ""
+    }`;
+  }
+  if (series && series.snapIndex !== null && model.trajectory?.origin_after_snap) return `Origins from frame ${series.frameIds[series.snapIndex]}`;
+  return "Available";
 }

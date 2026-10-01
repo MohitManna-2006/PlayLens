@@ -1,0 +1,450 @@
+{
+  "artifact_uri": "artifacts/models/trajectory-test-v1",
+  "dataset_version": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+  "error_by_horizon": {
+    "definition": "Mean Euclidean error (yd) at each future step on the test split, over target players with a supplied position at that step.",
+    "series": [
+      {
+        "is_served": true,
+        "label": "Learned model",
+        "model_version": "trajectory-test-v1",
+        "points": [
+          {
+            "hi": null,
+            "horizon_s": 0.1,
+            "lo": null,
+            "n": 12,
+            "value": 0.0035
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.2,
+            "lo": null,
+            "n": 12,
+            "value": 0.0035
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.3,
+            "lo": null,
+            "n": 12,
+            "value": 0.0037
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.4,
+            "lo": null,
+            "n": 12,
+            "value": 0.0031
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.5,
+            "lo": null,
+            "n": 12,
+            "value": 0.0035
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.6,
+            "lo": null,
+            "n": 12,
+            "value": 0.0029
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.7,
+            "lo": null,
+            "n": 6,
+            "value": 0.0027
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.8,
+            "lo": null,
+            "n": 0,
+            "value": null
+          }
+        ]
+      },
+      {
+        "is_served": false,
+        "label": "Constant velocity (supplied speed and direction)",
+        "model_version": "trajectory-cv-baseline-v1",
+        "points": [
+          {
+            "hi": null,
+            "horizon_s": 0.1,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.2,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.3,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.4,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.5,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.6,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.7,
+            "lo": null,
+            "n": 6,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.8,
+            "lo": null,
+            "n": 0,
+            "value": null
+          }
+        ]
+      },
+      {
+        "is_served": false,
+        "label": "Constant velocity (finite difference)",
+        "model_version": "trajectory-cv-fd-baseline-v1",
+        "points": [
+          {
+            "hi": null,
+            "horizon_s": 0.1,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.2,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.3,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.4,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.5,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.6,
+            "lo": null,
+            "n": 12,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.7,
+            "lo": null,
+            "n": 6,
+            "value": 0.0
+          },
+          {
+            "hi": null,
+            "horizon_s": 0.8,
+            "lo": null,
+            "n": 0,
+            "value": null
+          }
+        ]
+      }
+    ]
+  },
+  "failure_modes": [
+    "Error grows with horizon: 0.00 yd at 0.1 s to nan yd at 0.8 s (n = 0 players still in view at the last step).",
+    "Inputs cover only the tracked subset of players (no offensive linemen or pass rushers) and no ball track.",
+    "The ball landing point is excluded from inputs, so the model infers where the pass goes from player motion only."
+  ],
+  "model_version": "trajectory-test-v1",
+  "reproducibility": {
+    "artifacts": [
+      "artifacts/models/trajectory-test-v1/model.json",
+      "artifacts/models/trajectory-test-v1/evaluation.json"
+    ],
+    "config": "playlens_ml.datasets.testing.tiny_config",
+    "dataset_manifest": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+    "git_commit": "0000000000000000000000000000000000000000",
+    "run_id": "trajectory-test-example-run"
+  },
+  "retrieval": null,
+  "run_id": "trajectory-test-example-run",
+  "run_time": "2026-01-01T00:00:00+00:00",
+  "scope": {
+    "exclusions": "none; every test-split target player with at least one supplied future frame is scored",
+    "horizon": "8 steps (0.8 s) after the last observed frame; steps beyond a play's supplied future are masked",
+    "limitations": [
+      "Passing plays only; 1-17 tracked players per play, no offensive linemen or pass rushers.",
+      "No frame-level ball track; the ball landing point is deliberately not an input.",
+      "Future positions exist only for flagged target players.",
+      "Deterministic point forecasts without uncertainty.",
+      "One season (2023); test weeks 17-18 may include rested starters."
+    ],
+    "observation_window": "the last 12 observed frames (1.2 s) before the prediction origin; shorter plays padded and masked",
+    "population": "Tracked passing plays from the NFL Big Data Bowl 2026 Analytics release, 2023 season",
+    "predicted": "Future canonical x/y of each player flagged player_to_predict (the targeted receiver and flagged coverage defenders)",
+    "sample_count": 12,
+    "sample_unit": "target player",
+    "split_policy": "synthetic-weeks-v1: train weeks 1-1, validation weeks 2-2, test weeks 3-3; whole games stay in one split"
+  },
+  "slices": {
+    "reporting_rule": "Test split. Slices with fewer than 100 target players are marked insufficient.",
+    "rows": [
+      {
+        "ade_yd": 0.0033,
+        "coverage": null,
+        "fde_yd": 0.0025,
+        "n": 8,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "side: defense",
+        "sufficient": false
+      },
+      {
+        "ade_yd": 0.0034,
+        "coverage": null,
+        "fde_yd": 0.0038,
+        "n": 4,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "side: offense",
+        "sufficient": false
+      },
+      {
+        "ade_yd": 0.0033,
+        "coverage": null,
+        "fde_yd": 0.0025,
+        "n": 8,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "role: Defensive Coverage",
+        "sufficient": false
+      },
+      {
+        "ade_yd": 0.0034,
+        "coverage": null,
+        "fde_yd": 0.0038,
+        "n": 4,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "role: Targeted Receiver",
+        "sufficient": false
+      },
+      {
+        "ade_yd": 0.0033,
+        "coverage": null,
+        "fde_yd": 0.0025,
+        "n": 8,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "position: CB",
+        "sufficient": false
+      },
+      {
+        "ade_yd": 0.0034,
+        "coverage": null,
+        "fde_yd": 0.0038,
+        "n": 4,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "position: WR",
+        "sufficient": false
+      },
+      {
+        "ade_yd": 0.0033,
+        "coverage": null,
+        "fde_yd": 0.003,
+        "n": 12,
+        "note": "Constant velocity ADE 0.00 / FDE 0.00 yd",
+        "slice": "supplied horizon: 1-10 frames",
+        "sufficient": false
+      }
+    ]
+  },
+  "split": "test (weeks 3-3); checkpoint selected on validation (weeks 2-2)",
+  "status": "complete",
+  "status_reason": null,
+  "system": null,
+  "task": "trajectory",
+  "trajectory": {
+    "aggregation": "mean over target players of per-player ADE (mean error over valid steps) and FDE (error at the last valid step); 95% intervals from 1,000 bootstrap resamples of plays",
+    "condition_groups": [
+      {
+        "conditions": "Test split (weeks 3-3) \u00b7 horizon up to 0.8 s \u00b7 same target players and masks for every row",
+        "rows": [
+          {
+            "ade_interval": {
+              "hi": 0.0038,
+              "level": 0.95,
+              "lo": 0.0029
+            },
+            "ade_yd": 0.0033,
+            "fde_interval": {
+              "hi": 0.0037,
+              "level": 0.95,
+              "lo": 0.0023
+            },
+            "fde_yd": 0.003,
+            "horizon_s": 0.8,
+            "is_served": true,
+            "kind": "learned",
+            "label": "Learned model",
+            "model_version": "trajectory-test-v1",
+            "n": 12
+          },
+          {
+            "ade_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "ade_yd": 0.0,
+            "fde_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "fde_yd": 0.0,
+            "horizon_s": 0.8,
+            "is_served": false,
+            "kind": "baseline",
+            "label": "Constant velocity (supplied speed and direction)",
+            "model_version": "trajectory-cv-baseline-v1",
+            "n": 12
+          },
+          {
+            "ade_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "ade_yd": 0.0,
+            "fde_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "fde_yd": 0.0,
+            "horizon_s": 0.8,
+            "is_served": false,
+            "kind": "baseline",
+            "label": "Constant velocity (finite difference)",
+            "model_version": "trajectory-cv-fd-baseline-v1",
+            "n": 12
+          }
+        ]
+      },
+      {
+        "conditions": "Validation split (weeks 2-2), used for checkpoint selection",
+        "rows": [
+          {
+            "ade_interval": {
+              "hi": 0.0038,
+              "level": 0.95,
+              "lo": 0.0029
+            },
+            "ade_yd": 0.0033,
+            "fde_interval": {
+              "hi": 0.0038,
+              "level": 0.95,
+              "lo": 0.0024
+            },
+            "fde_yd": 0.003,
+            "horizon_s": 0.8,
+            "is_served": true,
+            "kind": "learned",
+            "label": "Learned model",
+            "model_version": "trajectory-test-v1",
+            "n": 12
+          },
+          {
+            "ade_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "ade_yd": 0.0,
+            "fde_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "fde_yd": 0.0,
+            "horizon_s": 0.8,
+            "is_served": false,
+            "kind": "baseline",
+            "label": "Constant velocity (supplied speed and direction)",
+            "model_version": "trajectory-cv-baseline-v1",
+            "n": 12
+          },
+          {
+            "ade_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "ade_yd": 0.0,
+            "fde_interval": {
+              "hi": 0.0,
+              "level": 0.95,
+              "lo": 0.0
+            },
+            "fde_yd": 0.0,
+            "horizon_s": 0.8,
+            "is_served": false,
+            "kind": "baseline",
+            "label": "Constant velocity (finite difference)",
+            "model_version": "trajectory-cv-fd-baseline-v1",
+            "n": 12
+          }
+        ]
+      }
+    ],
+    "masks": "steps beyond min(horizon, supplied future) are excluded; non-target players are never scored"
+  },
+  "uncertainty": {
+    "calibration": null,
+    "coverage": [],
+    "definition": "Coverage of nominal prediction regions.",
+    "supported": false,
+    "unsupported_reason": "Deterministic point forecast. The model outputs no uncertainty, so none is drawn."
+  }
+}

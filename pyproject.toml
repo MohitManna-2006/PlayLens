@@ -28,10 +28,17 @@ python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
 
+[[tool.mypy.overrides]]
+module = ["torch_geometric.*", "yaml", "mlflow.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["ml/tests", "services/api/tests"]
 addopts = "--import-mode=importlib"
-filterwarnings = ["ignore:Using `httpx` with `starlette.testclient` is deprecated"]
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    "ignore:`torch.jit.script` is deprecated:FutureWarning",
+]
 
 [dependency-groups]
 dev = [

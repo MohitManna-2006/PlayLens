@@ -99,7 +99,7 @@ class PlayService:
 
     # ---- lookup ----
 
-    def _record(self, external_id: str) -> PlayRecord:
+    def record(self, external_id: str) -> PlayRecord:
         try:
             game_id, play_id = decode_play_id(external_id)
         except InvalidPlayIdError as err:
@@ -225,7 +225,7 @@ class PlayService:
     # ---- detail ----
 
     def get_play(self, external_id: str) -> PlayDetail:
-        r = self._record(external_id)
+        r = self.record(external_id)
         p = r.play
         direction = p.get("play_direction_raw")
         info = self.repo.info()
@@ -274,7 +274,7 @@ class PlayService:
     def get_frames(
         self, external_id: str, start_frame: int | None, end_frame: int | None
     ) -> FramesPayload:
-        r = self._record(external_id)
+        r = self.record(external_id)
         if (
             start_frame is not None
             and end_frame is not None
@@ -330,7 +330,7 @@ class PlayService:
         )
 
     def get_future(self, external_id: str) -> FuturePayload:
-        r = self._record(external_id)
+        r = self.record(external_id)
         by_player: dict[int, list[FuturePoint]] = {}
         for row in self.repo.future_trajectories(r.game_id, r.play_id):
             by_player.setdefault(row["nfl_id"], []).append(

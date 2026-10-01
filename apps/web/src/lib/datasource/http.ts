@@ -3,7 +3,7 @@
  * Separates network, user (4xx), server (5xx), and unavailable failures so each
  * screen can show the right state. It never substitutes fixture data.
  */
-import type { PlayQuery } from "@/lib/contracts";
+import type { PlayQuery, TrajectoryRequest } from "@/lib/contracts";
 import { ApiError, ErrorEnvelopeSchema } from "@/lib/contracts";
 import type { RawSource } from "./types";
 
@@ -86,8 +86,13 @@ export class HttpSource implements RawSource {
   compare() {
     return notServed("Structural comparison", "the compare endpoint is not implemented");
   }
-  predictTrajectory() {
-    return notServed("Trajectory prediction");
+  predictTrajectory(req: TrajectoryRequest, signal?: AbortSignal) {
+    return this.request(`/api/v1/predict/trajectory`, {
+      method: "POST",
+      body: JSON.stringify(req),
+      headers: { "Content-Type": "application/json" },
+      signal,
+    });
   }
   getPlayLabConfig() {
     return notServed("PlayLab");
@@ -95,7 +100,7 @@ export class HttpSource implements RawSource {
   runCounterfactual() {
     return notServed("PlayLab");
   }
-  getEvaluation() {
-    return notServed("Model evaluation", "no model has been evaluated");
+  getEvaluation(modelVersion: string, signal?: AbortSignal) {
+    return this.request(`/api/v1/evaluation/summary?model_version=${encodeURIComponent(modelVersion)}`, { signal });
   }
 }

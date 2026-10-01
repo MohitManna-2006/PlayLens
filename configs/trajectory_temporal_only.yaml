@@ -1,0 +1,46 @@
+# Ablation / lightweight learned baseline: the same pipeline without spatial message passing.
+# Each player is encoded from its own observed sequence only (no GNN layers, no interaction layer).
+model_name: trajectory-temporal-only
+model_version: trajectory-temporal-only-v1
+seed: 7
+export: false
+# Architecture comparison happens on validation only; test stays untouched.
+evaluate_test: false
+
+data:
+  subset: full
+  window: 20
+  horizon: auto_q95
+
+model:
+  hidden: 96
+  categorical_dim: 8
+  knn: 4
+  gnn_layers: 0
+  gnn_heads: 4
+  transformer_layers: 2
+  transformer_heads: 4
+  ff_mult: 2
+  dropout: 0.1
+  embedding_dim: 128
+  interaction_layer: false
+  head_hidden: 192
+  target_representation: residual_cv
+
+train:
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  epochs: 30
+  patience: 6
+  warmup_epochs: 1.0
+  grad_clip: 1.0
+  mirror_probability: 0.5
+  device: auto
+  num_workers: 0
+  max_train_plays: null
+
+tracking:
+  mlflow: true
+  experiment: playlens-trajectory
+  tracking_uri: null

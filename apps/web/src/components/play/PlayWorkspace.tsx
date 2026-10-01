@@ -38,7 +38,7 @@ import { atLeast, useBreakpoint } from "@/lib/hooks/useBreakpoint";
 import { pushRecent } from "@/lib/hooks/recent";
 import { usePlayData, usePlayFuture } from "@/lib/hooks/usePlayData";
 import { parsePlayId } from "@/lib/playId";
-import { observedFuture, predictedAt } from "@/lib/play/forecast";
+import { compareToActual, forecastOriginIndex, forecastPaths, isFixedOrigin, observedFuture, predictedAt } from "@/lib/play/forecast";
 import { buildGroundTruth } from "@/lib/play/groundTruth";
 import { Clock, useTimeDerived, type TimeSource } from "@/lib/replay/clock";
 import { handleReplayKey } from "@/lib/replay/keys";
@@ -137,7 +137,11 @@ export function PlayWorkspace({ playId }: { playId: string }) {
 
   const selIndex = series && selectedId ? series.tracks.findIndex((t) => t.ref.player_id === selectedId) : -1;
   const trajModel = served("trajectory");
-  const future = usePlayFuture(detail.data, overlays.actualFuture);
+  const fixedOrigin = isFixedOrigin(trajModel);
+  const horizonOptions = trajModel?.trajectory?.horizons_s ?? [];
+  const horizon = horizonOptions.includes(forecast.horizon) ? forecast.horizon : (horizonOptions[horizonOptions.length - 1] ?? forecast.horizon);
+  // The held-out future is fetched for the overlay, or to score a ready real-data forecast against it.
+  const future = usePlayFuture(detail.data, overlays.actualFuture || (fixedOrigin && forecast.pinned?.status === "ready"));
   const pinned = forecast.pinned;
   const inReview = !!pinned && pinned.status === "ready" && frameIndex >= pinned.originIndex;
 
@@ -185,10 +189,15 @@ export function PlayWorkspace({ playId }: { playId: string }) {
       clock.seek(series.times[originIndex]);
       const run = ++forecastRun.current;
       const originFrameId = series.frameIds[originIndex];
-      const horizon = forecast.horizon;
       setForecast((f) => ({ ...f, pinned: { originIndex, originFrameId, horizon, status: "running" } }));
       try {
-        const result = await client.predictTrajectory({ play_id: playId, origin_frame_id: originFrameId, horizon_s: horizon, player_ids: null });
+        const result = await client.predictTrajectory({
+          play_id: playId,
+          model_version: trajModel?.model_version ?? null,
+          origin_frame_id: originFrameId,
+          horizon_s: horizon,
+          player_ids: null,
+        });
         if (run !== forecastRun.current) return;
         setForecast((f) => ({ ...f, pinned: { originIndex, originFrameId, horizon, status: "ready", result } }));
         if (view === "action") setFramingIndex(originIndex);
@@ -199,7 +208,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
         announce("Forecast failed. The observed replay is unaffected.");
       }
     },
-    [series, clock, client, playId, forecast.horizon, view, announce],
+    [series, clock, client, playId, horizon, trajModel, view, announce],
   );
 
   // Announce leaving forecast review when the user scrubs before the origin.
@@ -215,20 +224,29 @@ export function PlayWorkspace({ playId }: { playId: string }) {
   }, [inReview, pinned, announce]);
 
   const forecastLayer: ForecastLayer | null = useMemo(() => {
-    if (!series || !forecast.enabled || !inReview || !pinned?.result || selIndex < 0) return null;
-    const p = pinned.result.players.find((x) => x.player_id === selectedId);
-    const t = series.tracks[selIndex];
-    if (!p || !p.path.length || !isPresent(t, pinned.originIndex)) return null;
+    if (!series || !forecast.enabled || !inReview || !pinned?.result) return null;
+    const { primary, others } = forecastPaths(series, pinned.result, pinned.originIndex, selectedId, fixedOrigin);
+    if (!primary && !others.length) return null;
+    const sample = primary ? pinned.result.players.find((x) => x.player_id === selectedId) : undefined;
     return {
-      playerIndex: selIndex,
-      origin: { x: t.x[pinned.originIndex], y: t.y[pinned.originIndex] },
-      path: p.path,
-      valid: p.valid,
-      samples: forecast.showUncertainty ? p.samples : null,
+      playerIndex: primary?.playerIndex ?? -1,
+      origin: primary?.origin ?? { x: 0, y: 0 },
+      path: primary?.path ?? [],
+      valid: primary?.valid ?? [],
+      samples: forecast.showUncertainty && sample ? sample.samples : null,
       showUncertainty: forecast.showUncertainty,
-      observedFuture: forecast.showObservedFuture ? observedFuture(series, selIndex, pinned.originIndex, pinned.horizon) : null,
+      // Pinned-origin (fixture) models compare against later tracked frames; real-data forecasts use the
+      // held-out actual future overlay instead, because no tracked frames follow the origin.
+      observedFuture:
+        primary && !fixedOrigin && forecast.showObservedFuture ? observedFuture(series, primary.playerIndex, pinned.originIndex, pinned.horizon) : null,
+      others,
     };
-  }, [series, forecast, inReview, pinned, selIndex, selectedId]);
+  }, [series, forecast, inReview, pinned, selectedId, fixedOrigin]);
+
+  const actualComparison = useMemo(
+    () => (pinned?.status === "ready" && pinned.result && future.data ? compareToActual(pinned.result, future.data) : null),
+    [pinned, future.data],
+  );
 
   /* ---- ground truth after the observed window ---- */
   const groundTruth: GroundTruthLayer | null = useMemo(
@@ -383,7 +401,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
         ]
       : [];
   const span =
-    series && pinned?.status === "ready"
+    series && pinned?.status === "ready" && !fixedOrigin
       ? { from: series.times[pinned.originIndex], to: Math.min(series.times[series.times.length - 1], series.times[pinned.originIndex] + pinned.horizon), label: `Forecast horizon ${pinned.horizon.toFixed(1)} s` }
       : null;
 
@@ -418,12 +436,16 @@ export function PlayWorkspace({ playId }: { playId: string }) {
         series={series}
         frameIndex={frameIndex}
         selectedId={selectedId}
-        state={forecast}
+        state={{ ...forecast, horizon }}
+        originIndex={forecastOriginIndex(series, trajModel, frameIndex)}
+        actualFutureShown={fixedOrigin ? overlays.actualFuture : forecast.showObservedFuture}
+        comparison={actualComparison}
+        comparisonPending={fixedOrigin && pinned?.status === "ready" && future.isFetching}
         onHorizon={(h) => setForecast((f) => ({ ...f, horizon: h }))}
         onRun={runForecast}
         onReturnToOrigin={() => pinned && clock?.seek(series.times[pinned.originIndex])}
         onUncertainty={(v) => setForecast((f) => ({ ...f, showUncertainty: v }))}
-        onObservedFuture={(v) => setForecast((f) => ({ ...f, showObservedFuture: v }))}
+        onObservedFuture={(v) => (fixedOrigin ? patchOverlays({ actualFuture: v }) : setForecast((f) => ({ ...f, showObservedFuture: v })))}
         onClose={() => setForecast((f) => ({ ...f, enabled: false }))}
       />
     ) : (
@@ -432,7 +454,11 @@ export function PlayWorkspace({ playId }: { playId: string }) {
           <DashSample /> Model prediction
         </h3>
         <p className="mt-2 text-body-2 text-fg-2">
-          {trajModel ? `Predicted paths come from ${trajModel.model_version}. Opt in to review a forecast from a pinned origin.` : "No trajectory model is served."}
+          {!trajModel
+            ? "No trajectory model is served."
+            : fixedOrigin
+              ? `Predicted paths come from ${trajModel.model_version}, starting at the last observed frame. Opt in to run a forecast.`
+              : `Predicted paths come from ${trajModel.model_version}. Opt in to review a forecast from a pinned origin.`}
         </p>
         {trajModel && (
           <button
@@ -469,7 +495,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
 
   const legendExtra = forecastLayer
     ? [
-        { kind: "predicted", label: "Predicted" },
+        { kind: "predicted", label: "Predicted · model" },
         ...(forecastLayer.samples ? [{ kind: "samples", label: "Sampled futures" }] : []),
         ...(forecastLayer.observedFuture ? [{ kind: "observed", label: "Observed future" }] : []),
       ]

@@ -1,1 +1,54 @@
-[]
+[
+  {
+    "description": "Encodes the last 12 observed frames as per-frame kNN player graphs (k=3, 1 GATv2 layers) and per-player temporal Transformers (1 layers), then predicts 8 future steps for each target player as a correction to constant velocity. Inputs exclude the ball landing point, charted labels, and outcomes.",
+    "evaluation_status": "evaluated",
+    "kind": "learned",
+    "metrics": [
+      {
+        "ade_yd": 0.0033,
+        "baseline_ade_yd": 0.0,
+        "baseline_fde_yd": 0.0,
+        "baseline_model_version": "trajectory-cv-baseline-v1",
+        "fde_yd": 0.003,
+        "players": 12,
+        "split": "validation"
+      },
+      {
+        "ade_yd": 0.0033,
+        "baseline_ade_yd": 0.0,
+        "baseline_fde_yd": 0.0,
+        "baseline_model_version": "trajectory-cv-baseline-v1",
+        "fde_yd": 0.003,
+        "players": 12,
+        "split": "test"
+      }
+    ],
+    "model_version": "trajectory-test-v1",
+    "name": "Spatial-temporal trajectory model (GATv2 + Transformer)",
+    "provenance": {
+      "created_at": "2026-01-01T00:00:00+00:00",
+      "dataset_version": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+      "git_commit": "0000000000000000000000000000000000000000",
+      "mlflow_run_id": null,
+      "model_name": "trajectory-test",
+      "parameters": 5489,
+      "run_id": "trajectory-test-example-run",
+      "split_version": "synthetic-weeks-v1-1d504e6a0cdc",
+      "weights_bytes": 37710
+    },
+    "retrieval": null,
+    "served": true,
+    "task": "trajectory",
+    "trajectory": {
+      "horizons_s": [
+        0.8
+      ],
+      "input_window_frames": 12,
+      "origin": "last_observed_frame",
+      "origin_after_snap": false,
+      "origin_rule": "Forecasts start at the play's last observed frame, where the dataset's input window ends.",
+      "uncertainty": "none",
+      "uncertainty_note": "Deterministic point forecast. The model outputs no uncertainty, so none is drawn."
+    }
+  }
+]

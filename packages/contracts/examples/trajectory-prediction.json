@@ -1,0 +1,183 @@
+{
+  "dataset_version": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+  "future_frame_ids": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "horizon_s": 0.8,
+  "input_window": {
+    "end_frame_id": 23,
+    "start_frame_id": 12
+  },
+  "latency_ms": 1.0,
+  "latency_scope": "Server side: data access, feature build, and forward pass on CPU; excludes network",
+  "model_name": "trajectory-test",
+  "model_version": "trajectory-test-v1",
+  "origin_frame_id": 23,
+  "play_id": "2099090011-101",
+  "play_split": "train",
+  "players": [
+    {
+      "path": [
+        {
+          "x": 33.989,
+          "y": 15.077
+        },
+        {
+          "x": 34.119,
+          "y": 15.036
+        },
+        {
+          "x": 34.248,
+          "y": 14.997
+        },
+        {
+          "x": 34.379,
+          "y": 14.957
+        },
+        {
+          "x": 34.509,
+          "y": 14.916
+        },
+        {
+          "x": 34.642,
+          "y": 14.877
+        },
+        {
+          "x": 34.773,
+          "y": 14.838
+        },
+        {
+          "x": 34.9,
+          "y": 14.8
+        }
+      ],
+      "player_id": "1004",
+      "samples": null,
+      "valid": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "path": [
+        {
+          "x": 37.307,
+          "y": 12.067
+        },
+        {
+          "x": 37.278,
+          "y": 12.157
+        },
+        {
+          "x": 37.248,
+          "y": 12.246
+        },
+        {
+          "x": 37.219,
+          "y": 12.337
+        },
+        {
+          "x": 37.188,
+          "y": 12.427
+        },
+        {
+          "x": 37.161,
+          "y": 12.517
+        },
+        {
+          "x": 37.132,
+          "y": 12.608
+        },
+        {
+          "x": 37.1,
+          "y": 12.7
+        }
+      ],
+      "player_id": "2003",
+      "samples": null,
+      "valid": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    },
+    {
+      "path": [
+        {
+          "x": 40.688,
+          "y": 17.377
+        },
+        {
+          "x": 40.719,
+          "y": 17.437
+        },
+        {
+          "x": 40.749,
+          "y": 17.496
+        },
+        {
+          "x": 40.779,
+          "y": 17.557
+        },
+        {
+          "x": 40.809,
+          "y": 17.617
+        },
+        {
+          "x": 40.841,
+          "y": 17.678
+        },
+        {
+          "x": 40.872,
+          "y": 17.74
+        },
+        {
+          "x": 40.9,
+          "y": 17.8
+        }
+      ],
+      "player_id": "2004",
+      "samples": null,
+      "valid": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      ]
+    }
+  ],
+  "request_id": "example",
+  "split_version": "synthetic-weeks-v1-1d504e6a0cdc",
+  "step_s": 0.1,
+  "target_horizon_frames": 7,
+  "uncertainty": {
+    "calibration": null,
+    "description": "Deterministic point forecast. The model outputs no uncertainty, so none is drawn.",
+    "kind": "none"
+  },
+  "warnings": [
+    "The dataset supplies 7 future frames for this play; later steps have no actual position to compare."
+  ]
+}

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request
 
 from ... import __version__
-from ...schemas.health import Health, HealthDataset
+from ...schemas.health import Health, HealthDataset, HealthModels
+from ...services.models import ModelRegistry
 from ...services.plays import PlayService
 
 router = APIRouter(tags=["health"])
@@ -27,9 +28,15 @@ def health(request: Request) -> Health:
             play_count=info.play_count,
             error=None,
         )
+    registry: ModelRegistry | None = getattr(request.app.state, "model_registry", None)
+    models = HealthModels(
+        loaded=[m.version for m in registry.models] if registry else [],
+        errors=dict(registry.errors) if registry else {},
+    )
     return Health(
         status="ok" if dataset.loaded else "degraded",
         service="playlens-api",
         version=__version__,
         dataset=dataset,
+        models=models,
     )

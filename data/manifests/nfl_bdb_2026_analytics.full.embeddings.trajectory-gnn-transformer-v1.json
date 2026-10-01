@@ -1,0 +1,28 @@
+{
+  "checks": {
+    "determinism_max_abs_diff": 9.5367431640625e-07,
+    "dimension": 128,
+    "expected_rows": 14108,
+    "finite": true,
+    "rows": 14108,
+    "unique_play_model_pairs": true,
+    "unit_norm_max_deviation": 1.1920928955078125e-07
+  },
+  "dataset_version": "nfl_bdb_2026_analytics@full-91dc5311e8c7",
+  "device": "cpu",
+  "dimension": 128,
+  "generated_at": "2026-10-01T03:33:18+00:00",
+  "model_dataset_version": "nfl_bdb_2026_analytics@full-91dc5311e8c7",
+  "model_version": "trajectory-gnn-transformer-v1",
+  "model_weights_sha256": "9090b48536ef28ab74584239ca66bf6bf94cb4a30ae66f69dcd7f1f326448e9d",
+  "normalization": "L2-normalised; cosine similarity = dot product",
+  "path": "data/processed/nfl_bdb_2026_analytics/full/embeddings/trajectory-gnn-transformer-v1.parquet",
+  "rows_by_split": {
+    "test": 1559,
+    "train": 10862,
+    "validation": 1687
+  },
+  "sha256": "c54181e8342cbe46b608fd70ad9ea2e1edeb7e6fd027d9882e71c0952107ca97",
+  "split_version": "temporal-weeks-v1-b39c53db8a01",
+  "subset": "full"
+}

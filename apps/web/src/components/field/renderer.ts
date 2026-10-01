@@ -18,6 +18,7 @@ import {
   type Viewport,
 } from "@/lib/tracking/geometry";
 import { tokenLabel } from "@/lib/format";
+import type { ForecastPath } from "@/lib/play/forecast";
 import type { GroundTruth } from "@/lib/play/groundTruth";
 import { knnGraph, nearestOpponent, trailRange } from "@/lib/tracking/measures";
 import { gapAfter, isPresent, type TrackingSeries } from "@/lib/tracking/series";
@@ -64,6 +65,10 @@ export const DEFAULT_OVERLAYS: OverlayState = {
  */
 export type GroundTruthLayer = GroundTruth;
 
+/**
+ * Model forecast. The primary path (selected player, playerIndex -1 when none)
+ * is emphasized; ``others`` are the remaining forecast players, drawn lighter.
+ */
 export interface ForecastLayer {
   playerIndex: number;
   origin: Point;
@@ -72,6 +77,7 @@ export interface ForecastLayer {
   samples: Point[][] | null;
   showUncertainty: boolean;
   observedFuture: Point[] | null;
+  others: ForecastPath[];
 }
 
 export interface PlayLabLayer {
@@ -482,11 +488,11 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
     ctx.fillRect(end.x - 3.5, end.y - 3.5, 7, 7);
     ctx.restore();
   };
-  const drawPredicted = (pts: Point[], from: Point, color: string) => {
+  const drawPredicted = (pts: Point[], from: Point, color: string, width = 2) => {
     if (!pts.length) return;
     ctx.save();
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = width;
     ctx.setLineDash([6, 4]);
     ctx.lineJoin = "round";
     polyline(ctx, input, pts, from);
@@ -510,6 +516,7 @@ export function render(ctx: CanvasRenderingContext2D, input: RenderInput) {
   }
 
   if (f) {
+    for (const o of f.others) drawPredicted(validPrefix(o.path, o.valid), o.origin, "rgba(231,182,107,0.6)", 1.5);
     if (f.observedFuture) drawObservedFuture(f.observedFuture, f.origin);
     drawPredicted(validPrefix(f.path, f.valid), f.origin, C.accent);
   }

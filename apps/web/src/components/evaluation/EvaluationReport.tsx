@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { AnalystPane } from "@/components/analyst/AnalystPane";
 import { useAnalystStore } from "@/components/shell/Providers";
 import { Identifier } from "@/components/ui/Identifier";
@@ -17,6 +17,8 @@ import { atLeast, useBreakpoint } from "@/lib/hooks/useBreakpoint";
 import { ChartFrame, fmt, LineChart, SeriesTable, type ChartSeries } from "./ChartFrame";
 
 const PENDING = "Pending evaluation";
+
+const noopSubscribe = () => () => {};
 
 function kindText(m: ModelInfo) {
   return m.kind === "learned" ? "Learned model" : m.kind === "baseline" ? "Baseline" : "Development mock";
@@ -53,9 +55,13 @@ export function EvaluationReport() {
   const analyst = useAnalystStore();
   const { open: analystOpen } = useAnalystState(analyst);
   const models = useQuery({ queryKey: ["models"], queryFn: ({ signal }) => client.listModels(signal) });
-  const served = models.data?.find((m) => m.task === "trajectory" && m.served) ?? models.data?.[0];
+  // The top bar may fill the shared model cache before this boundary hydrates; render
+  // the server's (empty) state first so hydration matches, then the cached data.
+  const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  const modelList = hydrated ? models.data : undefined;
+  const served = modelList?.find((m) => m.task === "trajectory" && m.served) ?? modelList?.[0];
   const version = params.get("model") ?? served?.model_version ?? null;
-  const model = models.data?.find((m) => m.model_version === version) ?? null;
+  const model = modelList?.find((m) => m.model_version === version) ?? null;
   const report = useQuery({
     queryKey: ["evaluation", version],
     queryFn: ({ signal }) => client.getEvaluation(version!, signal),
@@ -78,7 +84,7 @@ export function EvaluationReport() {
       <div className="min-w-0">
         <header className="flex flex-wrap items-end justify-between gap-4 pt-6 pb-2">
           <h1 className="text-page font-semibold">Evaluation</h1>
-          {models.data && (
+          {modelList && (
             <MenuButton
               label="Model version"
               placement="bottom-end"
@@ -86,7 +92,7 @@ export function EvaluationReport() {
               triggerContent={<span className="num">Model {version ?? "—"}</span>}
               groups={(["trajectory", "retrieval", "counterfactual"] as const).map((task) => ({
                 label: task === "trajectory" ? "Trajectory" : task === "retrieval" ? "Retrieval" : "Counterfactual",
-                items: models.data
+                items: modelList
                   .filter((m) => m.task === task)
                   .map((m) => ({
                     value: m.model_version,
@@ -100,7 +106,7 @@ export function EvaluationReport() {
           )}
         </header>
         <p className="num flex flex-wrap gap-x-4 gap-y-1 text-meta text-fg-2">
-          <span className="font-sans">{model ? `${model.name} · ${kindText(model)}` : models.data?.length === 0 ? "No model" : "Loading model"}</span>
+          <span className="font-sans">{model ? `${model.name} · ${kindText(model)}` : modelList?.length === 0 ? "No model" : "Loading model"}</span>
           <span>task {r?.task ?? "—"}</span>
           <span>dataset {r?.dataset_version ?? "—"}</span>
           <span>split {r?.split ?? "—"}</span>
@@ -120,7 +126,7 @@ export function EvaluationReport() {
           <StatusState kind="error" title="Model registry unavailable" className="mt-8" action={<button type="button" className="btn" onClick={() => models.refetch()}>Retry</button>}>
             {errorMessage(models.error)}
           </StatusState>
-        ) : models.data && models.data.length === 0 ? (
+        ) : modelList && modelList.length === 0 ? (
           <StatusState kind="unavailable" title="No models are registered yet" className="mt-8">
             The model registry is empty: nothing has been trained or evaluated, so this page reports no metrics. Tracking replay and
             play metadata do not depend on a model.

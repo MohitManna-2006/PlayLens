@@ -94,3 +94,9 @@ Each canonical column has one class in `ml/src/playlens_ml/data/canonical_schema
 | `post_play_outcome` | Results | pass result, yards gained, EPA, WPA, narrative description |
 
 Future targets, charted labels, and outcomes are written to separate artifacts from observed input. `check_feature_columns` rejects them as model inputs; `task_input_at_origin` fields require an explicit opt-in because they encode where the pass went.
+
+## ML splits and model inputs (Phase 3)
+
+`pnpm ml:splits` assigns whole games to `temporal-weeks-v1`: weeks 1–14 train (208 games, 10,862 plays), 15–16 validation (32, 1,687), 17–18 test (32, 1,559). The assignment is stored in `data/processed/<ds>/full/ml/` and summarized in the committed `data/manifests/nfl_bdb_2026_analytics.full.splits.json`.
+
+The trajectory model opts in to two `task_input_at_origin` fields, `player_role` and `player_to_predict`, and excludes `ball_land_x/y` and `num_frames_output` (the latter only masks targets). The allowlist and every exclusion reason are in `ml/src/playlens_ml/features/spec.py` and [ADR-0003](../decisions/ADR-0003-ml-split-and-leakage-policy.md).

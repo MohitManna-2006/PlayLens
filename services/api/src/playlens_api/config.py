@@ -26,11 +26,20 @@ class Settings(BaseSettings):
         description="Also allow any local port (Next.js moves off 3000 when busy).",
     )
     log_level: str = "INFO"
+    model_dir: Path | None = Field(
+        default=None,
+        description=(
+            "Directory of trained model artifacts; defaults to <repo>/artifacts/models."
+        ),
+    )
+    model_device: str = Field(
+        default="cpu", description="Inference device: cpu, mps, or cuda."
+    )
     tracking_cache_size: int = Field(
         default=128, ge=1, description="Plays whose frames stay cached in memory."
     )
 
-    @field_validator("data_root", mode="before")
+    @field_validator("data_root", "model_dir", mode="before")
     @classmethod
     def _blank_is_default(cls, v: object) -> object:
         return None if v in ("", None) else v

@@ -43,3 +43,6 @@ mlruns/
 # Next.js generated
 next-env.d.ts
 *.tsbuildinfo
+
+# PlayLens run outputs: checkpoints, evaluation tables, model artifacts (see docs/architecture/phase-3-ml.md)
+artifacts/

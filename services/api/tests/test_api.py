@@ -33,6 +33,7 @@ def test_health_reports_the_loaded_dataset(
         "play_count": 6,
         "error": None,
     }
+    assert body["models"] == {"loaded": [], "errors": {}}
 
 
 def test_missing_dataset_degrades_honestly(empty_client: TestClient) -> None:
@@ -233,16 +234,16 @@ def test_future_is_separate_ground_truth(
     assert client.get("/api/v1/plays/2099090010-999/future").status_code == 404
 
 
-def test_model_registry_is_empty(client: TestClient) -> None:
+def test_model_registry_is_empty_without_artifacts(client: TestClient) -> None:
     assert _get(client, "/api/v1/models") == []
+    r = client.post("/api/v1/predict/trajectory", json={"play_id": "2099090010-101"})
+    assert r.status_code == 503 and r.json()["error"]["code"] == "model_unavailable"
+    assert "pnpm ml:train" in r.json()["error"]["message"]
+    assert client.get("/api/v1/evaluation/summary").status_code == 503
 
 
 def test_no_fake_ml_endpoints(client: TestClient) -> None:
-    for path in (
-        "/api/v1/search/similar",
-        "/api/v1/predict/trajectory",
-        "/api/v1/playlab/counterfactual",
-    ):
+    for path in ("/api/v1/search/similar", "/api/v1/playlab/counterfactual"):
         assert client.post(path, json={}).status_code in (404, 405)
     assert client.get("/api/v1/plays/1-1/embedding").status_code == 404
 

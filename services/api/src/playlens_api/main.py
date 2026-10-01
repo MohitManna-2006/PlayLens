@@ -21,6 +21,7 @@ from playlens_ml.data.artifacts import (
     load_processed,
 )
 from playlens_ml.data.paths import DataPathError, data_layout
+from playlens_ml.inference.artifact import default_models_dir
 
 from . import __version__
 from .api.routes import health, models, plays
@@ -29,6 +30,7 @@ from .errors import install_error_handlers
 from .observability import configure_logging, install_request_logging
 from .repository.base import PlayRepository
 from .repository.parquet import ParquetPlayRepository
+from .services.models import ModelRegistry
 from .services.plays import PlayService
 
 log = logging.getLogger("playlens.api")
@@ -37,7 +39,8 @@ API_PREFIX = "/api/v1"
 DESCRIPTION = """
 Real NFL tracking data (NFL Big Data Bowl 2026 Analytics) in the PlayLens canonical
 coordinate frame. Observed frames, held-out future trajectories, and post-play
-metadata are separate resources. No model is served in this version.
+metadata are separate resources. Trajectory forecasts come from a trained
+model artifact (artifacts/models/); without one, model routes answer 503.
 """
 
 
@@ -52,7 +55,9 @@ def load_repository(settings: Settings) -> PlayRepository:
 
 
 def create_app(
-    settings: Settings | None = None, repository: PlayRepository | None = None
+    settings: Settings | None = None,
+    repository: PlayRepository | None = None,
+    registry: ModelRegistry | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     configure_logging(settings.log_level)
@@ -61,6 +66,16 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.play_service = None
         app.state.dataset_error = None
+        app.state.model_registry = registry or ModelRegistry.load(
+            settings.model_dir or default_models_dir(), settings.model_device
+        )
+        log.info(
+            "startup.models",
+            extra={
+                "models": [m.version for m in app.state.model_registry.models],
+                "errors": app.state.model_registry.errors,
+            },
+        )
         try:
             repo = repository or load_repository(settings)
             app.state.play_service = PlayService(repo)
@@ -89,7 +104,7 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_origin_regex=settings.cors_origin_regex,
-        allow_methods=["GET"],
+        allow_methods=["GET", "POST"],
         allow_headers=["*"],
         expose_headers=["X-Request-ID", "Server-Timing"],
     )

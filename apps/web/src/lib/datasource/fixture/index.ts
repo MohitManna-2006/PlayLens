@@ -366,11 +366,17 @@ export class FixtureSource implements RawSource {
     return {
       request_id: nextRequestId("fx-traj"),
       play_id: req.play_id,
+      model_name: "cv-baseline",
       model_version: CV_MODEL,
+      dataset_version: DATASET.dataset_version!,
+      split_version: "none (fixture models are not trained)",
+      play_split: "unknown",
       origin_frame_id: req.origin_frame_id,
       input_window: { start_frame_id: series.frameIds[o - 1], end_frame_id: series.frameIds[o] },
       horizon_s: req.horizon_s,
       step_s: step,
+      future_frame_ids: Array.from({ length: Math.round(req.horizon_s / step) }, (_, k) => series.frameIds[o] + k + 1),
+      target_horizon_frames: null,
       players,
       uncertainty: {
         kind: "samples",

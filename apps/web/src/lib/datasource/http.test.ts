@@ -3,13 +3,13 @@ import { ApiError } from "@/lib/contracts";
 import { HttpSource } from "./http";
 import { createClient } from "./index";
 
-type Handler = (url: string) => Response | Promise<Response>;
+type Handler = (url: string, init?: RequestInit) => Response | Promise<Response>;
 
 function source(handler: Handler) {
   const calls: string[] = [];
-  const fetcher = (async (input: RequestInfo | URL) => {
+  const fetcher = (async (input: RequestInfo | URL, init?: RequestInit) => {
     calls.push(String(input));
-    return handler(String(input));
+    return handler(String(input), init);
   }) as typeof fetch;
   return { http: new HttpSource("http://api.test/", fetcher), calls };
 }
@@ -56,16 +56,30 @@ describe("HTTP data source", () => {
     await expect(createClient(http).getFrames("1-1")).rejects.toMatchObject({ kind: "contract" });
   });
 
+  it("posts trajectory requests and reads evaluation reports from the served model", async () => {
+    const seen: Array<{ url: string; method?: string; body?: unknown }> = [];
+    const { http } = source((url, init) => {
+      seen.push({ url, method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return json({});
+    });
+    const req = { play_id: "2023091008-3826", origin_frame_id: 21, horizon_s: 2.4, player_ids: null };
+    await http.predictTrajectory(req);
+    await http.getEvaluation("trajectory-gnn-transformer-v1");
+    expect(seen[0]).toEqual({ url: "http://api.test/api/v1/predict/trajectory", method: "POST", body: req });
+    expect(seen[1].url).toBe("http://api.test/api/v1/evaluation/summary?model_version=trajectory-gnn-transformer-v1");
+  });
+
+  it("surfaces an unsupported forecast as a user error with its reason", async () => {
+    const { http } = source(() => envelope(422, "unsupported_prediction", "The model forecasts only from the last observed frame (21)."));
+    await expect(http.predictTrajectory({ play_id: "1-1", origin_frame_id: 3, horizon_s: 1, player_ids: null })).rejects.toMatchObject({
+      kind: "user",
+      code: "unsupported_prediction",
+    });
+  });
+
   it("marks unserved model capabilities unavailable without calling the network", async () => {
     const { http, calls } = source(() => json({}));
-    for (const p of [
-      http.findSimilar(),
-      http.predictTrajectory(),
-      http.getPlayLabConfig(),
-      http.runCounterfactual(),
-      http.getEvaluation(),
-      http.compare(),
-    ]) {
+    for (const p of [http.findSimilar(), http.getPlayLabConfig(), http.runCounterfactual(), http.compare()]) {
       await expect(p).rejects.toMatchObject({ kind: "unavailable" });
     }
     expect(calls).toEqual([]);
