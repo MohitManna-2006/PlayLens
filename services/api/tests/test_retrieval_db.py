@@ -25,6 +25,7 @@ from fastapi.testclient import TestClient
 from pgvector.psycopg import register_vector
 from playlens_api.config import Settings
 from playlens_api.main import create_app
+from playlens_api.retrieval import status as status_cli
 from playlens_api.retrieval.artifact import EmbeddingArtifactError, artifact_paths
 from playlens_api.retrieval.db import DEFAULT_DATABASE_URL, connect
 from playlens_api.retrieval.ingest import load
@@ -675,6 +676,24 @@ def test_wrong_dimension_is_rejected(db: Connect, synthetic_root: Path) -> None:
     _export(synthetic_root, mv, frame, dimension=64)
     with db() as conn, pytest.raises(EmbeddingArtifactError, match="dimension 64"):
         load(conn, mv, "full", synthetic_root)
+
+
+# ---- developer status CLI (make db-status) ----
+
+
+def test_status_cli_reports_ready_and_missing_embeddings(
+    known: Connect, schema: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    url = f"{URL}?options=-c%20search_path%3D{schema}%2Cpublic"
+    assert (
+        status_cli.main(["--database-url", url, "--model-version", KNOWN, "--brief"])
+        == 0
+    )
+    assert capsys.readouterr().out.strip() == f"{len(KNOWN_ROWS)} embeddings ({KNOWN})"
+    code = status_cli.main(["--database-url", url, "--model-version", "not-loaded-v1"])
+    out = capsys.readouterr().out
+    assert code == status_cli.NOT_LOADED == 3
+    assert "make db-load" in out and "pgvector" in out and "HNSW index" in out
 
 
 # ---- the API on the real store ----

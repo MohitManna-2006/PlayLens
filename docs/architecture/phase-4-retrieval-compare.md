@@ -35,7 +35,9 @@ pnpm dev:web
 
 Reset (destroys local database state): `docker compose down -v`, then `pnpm db:up && pnpm db:migrate && pnpm retrieval:load`. `pnpm db:down` stops the container and keeps the data. Nothing in normal startup migrates, loads, or resets.
 
-`pnpm db:migrate -- --status` lists applied and pending migrations without applying anything.
+`pnpm db:migrate -- --status` lists applied and pending migrations without applying anything. `pnpm db:status` (or `make db-status`) reports readiness: container, pgvector, migrations, HNSW index, and the embedding count.
+
+The root `Makefile` wraps these: `make dev` runs the whole sequence above (starting Postgres, migrating, and loading a fresh database before starting the API and web app), and `make db-up`, `make db-migrate`, `make db-load`, `make db-verify`, `make retrieval-benchmark`, `make db-reset FORCE=1` map to the commands here. See the README.
 
 ## Database
 

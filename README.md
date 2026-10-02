@@ -23,6 +23,17 @@ PlayLab and the Analyst are not built yet and show unavailable states.
 - Dataset notes, validation findings, and limitations: [docs/data/nfl-bdb-2026-analytics.md](docs/data/nfl-bdb-2026-analytics.md)
 - Canonical data model: [docs/decisions/ADR-0002-canonical-play-data-model.md](docs/decisions/ADR-0002-canonical-play-data-model.md)
 
+## Quick start
+
+With the data, model, and embedding artifacts in place (below), the Makefile runs everything:
+
+```bash
+make doctor   # check tools, Docker, local files, and ports (changes nothing)
+make dev      # start Postgres if needed, migrate, load embeddings on a fresh database, run API + web
+```
+
+`make dev` prints the URLs it uses (API `http://localhost:8000`, web on the first free port from 3000) and streams both servers' logs. Ctrl-C stops the API and web app; PostgreSQL keeps running so the next start is fast. `make stop` stops PostgreSQL (its data is kept). `make status` shows what is running, and `make` lists every command. The Makefile is a convenience layer over the `pnpm` and `uv` commands documented below, which keep working on their own.
+
 ## Prerequisites
 
 - Node.js ≥ 22 and pnpm ≥ 9
@@ -37,6 +48,7 @@ PlayLab and the Analyst are not built yet and show unavailable states.
 corepack enable
 pnpm install          # web workspace
 uv sync               # Python workspace (API + ML) into .venv
+# or: make install
 ```
 
 ### Data
@@ -94,9 +106,24 @@ pnpm retrieval:benchmark  # exact vs HNSW recall and latency -> docs/evaluation/
 pnpm db:down              # stop the container (data kept)
 ```
 
-Reset the database (destroys local database state): `docker compose down -v`, then `pnpm db:up && pnpm db:migrate && pnpm retrieval:load`. Normal startup never resets anything.
+The same steps through Make: `make db-up`, `make db-migrate`, `make db-load`, `make db-verify`, `make retrieval-benchmark`, `make db-down`, plus `make db-status` (container, migrations, and embedding count) and `make db-logs`.
+
+Reset the database (destroys local database state): `make db-reset FORCE=1` deletes the PostgreSQL volume, then recreates, migrates, and reloads it; without `FORCE=1` it only explains what it would do. The manual equivalent is `docker compose down -v` (which also removes the unused Redis volume), then `pnpm db:up && pnpm db:migrate && pnpm retrieval:load`. Normal startup never resets anything, and `make clean` never touches the database, data, models, or embeddings.
 
 ## Run
+
+```bash
+make dev      # everything (see Quick start); Ctrl-C stops API + web, Postgres keeps running
+# or one at a time, each in its own terminal
+make db-up    # Postgres + pgvector, waits until healthy
+make api      # API on :8000 with PLAYLENS_SUBSET=full (refuses to start if :8000 is taken)
+make web      # web app on the first free port from 3000 (PLAYLENS_WEB_PORT to change the start)
+make open     # open the running web app in your browser
+make status   # Docker, Postgres, API, retrieval, and web at a glance
+make stop     # stop Postgres
+```
+
+Without Make, the underlying commands are:
 
 ```bash
 pnpm db:up                     # once per boot, for Similar Plays and Compare similarity
@@ -106,7 +133,9 @@ pnpm dev:api      # uv run --directory services/api uvicorn playlens_api.main:ap
 pnpm dev:web      # pnpm --filter web dev
 ```
 
-Open `http://localhost:3000/explore`, choose a play, or go straight to a play such as `http://localhost:3000/play/2023123114-3710`, then **Find similar plays** and **Compare**. If port 3000 is taken, Next.js picks the next free port; the API accepts any local port.
+Open the web URL (for example `http://localhost:3000/explore`), choose a play, or go straight to a play such as `/play/2023123114-3710`, then **Find similar plays** and **Compare**. If port 3000 is taken, plain `next dev` picks the next free port and `make dev` / `make web` pick it up front and print it (on a machine where another app owns 3000, that is 3001); the API accepts any local port.
+
+What `make dev` does, in order: checks that the Docker daemon answers (`docker info`; with Colima stopped it says `colima start`), that dependencies and the processed full dataset exist, and that port 8000 is free (it never stops another process); starts PostgreSQL if needed and waits for its health check; applies pending migrations; checks the retrieval corpus and, on a fresh database, loads the Phase 3 embedding export (about 15 s) or, if the export is missing, prints the commands to create it and continues without similarity; then runs `scripts/dev.mjs`, which starts `pnpm dev:api` and `pnpm dev:web` with prefixed logs. Ctrl-C (or SIGTERM) stops both servers and waits for them to exit; if either server exits on its own, the other is stopped too.
 
 API docs: `http://localhost:8000/docs`. Health: `http://localhost:8000/health`.
 
@@ -124,13 +153,25 @@ API docs: `http://localhost:8000/docs`. Health: `http://localhost:8000/health`.
 | `PLAYLENS_EMBEDDING_MODEL_VERSION` | `trajectory-gnn-transformer-v1` | Embedding set searched by default |
 | `PLAYLENS_HNSW_EF_SEARCH` | `40` | HNSW candidate list size (raised to k); see the retrieval evaluation |
 | `PLAYLENS_DB_PORT` | `5432` | Host port of the database container |
+| `PLAYLENS_WEB_PORT` | `3000` | First port `make dev` / `make web` try for the web app |
 
 Web variables go in `apps/web/.env.local` (see `apps/web/.env.example`).
 
 ## Development commands
 
+| Make | What it runs |
+|---|---|
+| `make test` | `pnpm test`: Vitest and pytest (database tests run when Postgres is up) |
+| `make test-db` | starts Postgres, then all tests with `PLAYLENS_REQUIRE_DB_TESTS=1` |
+| `make lint` / `make typecheck` / `make build` | `pnpm lint` / `pnpm typecheck` / `pnpm build` |
+| `make format` / `make format-check` | Ruff format (Python; the web app has no formatter configured) |
+| `make check` | every pre-commit gate: lint, format check, typecheck, tests with the database required, production build, `git diff --check`; runs them all, prints a summary, and exits nonzero if any failed |
+| `make clean` | removes caches and `apps/web/.next`; never data, models, embeddings, or the database |
+
+The underlying commands:
+
 - `pnpm lint` — ESLint (web) and Ruff (Python)
-- `pnpm typecheck` — TypeScript and mypy (strict)
+- `pnpm typecheck` — Next.js route types (`next typegen`), then TypeScript and mypy (strict)
 - `pnpm test` — Vitest and pytest (the pgvector integration tests run when the database is up, or always with `PLAYLENS_REQUIRE_DB_TESTS=1`; `PLAYLENS_TEST_DATABASE_URL` overrides the target, and each run uses its own temporary schema)
 - `pnpm build` — production web build
 - `pnpm contracts:generate` — regenerate `packages/contracts` (OpenAPI and example payloads from a synthetic dataset)
@@ -144,11 +185,14 @@ Web variables go in `apps/web/.env.local` (see `apps/web/.env.example`).
 - `artifacts/`, `mlruns/` — local training outputs and MLflow store (ignored)
 - `services/api/src/playlens_api/retrieval` — pgvector store, SQL migrations, embedding import, verification, benchmark
 - `packages/contracts` — generated API contract artifacts shared with the web tests
+- `Makefile`, `scripts/` — developer commands: `dev.mjs` (runs API + web together), `dev.sh`, `db.sh`, `doctor.sh`, `status.sh`, `check.sh`, with shared helpers in `lib.sh`
 - `data/` — raw, interim, processed (ignored) and manifests (committed)
 - `docs/` — architecture, data notes, and decision records
 
 ## Troubleshooting
 
+- **`make dev` says the Docker daemon is not reachable**: start your Docker runtime (`colima start` with Colima) and retry. `make doctor` checks everything `make dev` needs.
+- **`make dev` / `make api` says port 8000 is in use**: another process holds it; PlayLens never stops it. Free the port, or if it is a PlayLens API from another terminal, use that one or stop it with Ctrl-C there.
 - **"No processed dataset" / API health `degraded`**: run `pnpm data:dev`, then restart the API.
 - **"Raw dataset not found"**: check the path above, or pass `--raw-dir`.
 - **Web shows "The PlayLens API could not be reached"**: start `pnpm dev:api` or set `NEXT_PUBLIC_PLAYLENS_API_BASE_URL`. The web app never falls back to synthetic data.
