@@ -18,6 +18,7 @@ from playlens_api.config import Settings
 from playlens_api.main import create_app
 from playlens_api.retrieval.artifact import EmbeddingArtifact
 from playlens_api.retrieval.memory import InMemoryVectorStore
+from playlens_api.retrieval.reference import topk
 from playlens_ml.training.train import TrainingResult
 
 SettingsFactory = Callable[[Path], Settings]
@@ -192,6 +193,20 @@ def test_unknown_and_malformed_plays(retrieval_client: TestClient) -> None:
         ]
         == "play_not_found"
     )
+
+
+def test_pair_ranks_agree_with_exact_search_for_every_pair(
+    memory_store: InMemoryVectorStore,
+) -> None:
+    """Regression: the pair distance came from a separate dot product, whose
+    rounding could count the right play as closer than itself (rank one too high)."""
+    store, n = memory_store, len(memory_store.ids)
+    for q in range(n):
+        found = topk(store.unit, store.ids, q, n - 1, np.arange(n) != q)
+        for nb in found:
+            pair = store.pair(store.ids[q], nb.play_id, store.set.model_version)
+            closer = sum(other.distance < nb.distance for other in found)
+            assert pair.right_rank_from_left == closer + 1, (store.ids[q], nb.play_id)
 
 
 def test_compare_reports_similarity_ranks_evidence_and_roles(

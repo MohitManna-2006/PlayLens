@@ -112,17 +112,20 @@ class InMemoryVectorStore:
         li, ri = self._query(left, model_version), self._query(right, model_version)
         d = 1.0 - float(self.unit[li] @ self.unit[ri])
 
-        def rank(q: int) -> int:
+        def rank(q: int, other: int) -> int:
+            # Compare against the other play's distance from the same matrix
+            # product: a separately computed dot product can round differently,
+            # which would count the other play as closer than itself.
             dist = 1.0 - self.unit @ self.unit[q]
             dist[q] = np.inf
-            return int((dist < d).sum()) + 1
+            return int((dist < dist[other]).sum()) + 1
 
         return PairOutcome(
             cosine_distance=d,
             left_split=self.splits[li],
             right_split=self.splits[ri],
-            right_rank_from_left=rank(li),
-            left_rank_from_right=rank(ri),
+            right_rank_from_left=rank(li, ri),
+            left_rank_from_right=rank(ri, li),
             candidates=len(self.ids) - 1,
             embedding_set=self.set,
             database_ms=round((time.perf_counter() - start) * 1000, 3),
