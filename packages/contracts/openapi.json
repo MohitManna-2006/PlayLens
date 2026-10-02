@@ -55,6 +55,212 @@
         "title": "BallPosition",
         "type": "object"
       },
+      "ComparePlay": {
+        "additionalProperties": false,
+        "properties": {
+          "first_frame_id": {
+            "title": "First Frame Id",
+            "type": "integer"
+          },
+          "last_frame_id": {
+            "description": "Last observed frame (forecast origin).",
+            "title": "Last Frame Id",
+            "type": "integer"
+          },
+          "observed_frame_count": {
+            "title": "Observed Frame Count",
+            "type": "integer"
+          },
+          "play": {
+            "$ref": "#/components/schemas/PlaySummary"
+          },
+          "play_id": {
+            "title": "Play Id",
+            "type": "string"
+          },
+          "split": {
+            "anyOf": [
+              {
+                "enum": [
+                  "train",
+                  "validation",
+                  "test"
+                ],
+                "type": "string"
+              },
+              {
+                "const": "unknown",
+                "type": "string"
+              }
+            ],
+            "title": "Split"
+          },
+          "window_start_frame_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First frame of the last 2.0 s window.",
+            "title": "Window Start Frame Id"
+          }
+        },
+        "required": [
+          "play_id",
+          "play",
+          "split",
+          "observed_frame_count",
+          "first_frame_id",
+          "last_frame_id",
+          "window_start_frame_id"
+        ],
+        "title": "ComparePlay",
+        "type": "object"
+      },
+      "CompareRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "left_play_id": {
+            "examples": [
+              "2023123114-3710"
+            ],
+            "title": "Left Play Id",
+            "type": "string"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Embedding model; default: the served one.",
+            "title": "Model Version"
+          },
+          "right_play_id": {
+            "examples": [
+              "2023110502-3603"
+            ],
+            "title": "Right Play Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "left_play_id",
+          "right_play_id"
+        ],
+        "title": "CompareRequest",
+        "type": "object"
+      },
+      "CompareResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "correspondence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Correspondence"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "descriptor_version": {
+            "title": "Descriptor Version",
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "evidence_note": {
+            "default": "Evidence lists deterministic observations about both plays: pre-snap context, charted labels, and tracking descriptors. None of them is a model input, and none explains why the learned embedding places the plays close together.",
+            "title": "Evidence Note",
+            "type": "string"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "left": {
+            "$ref": "#/components/schemas/ComparePlay"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "right": {
+            "$ref": "#/components/schemas/ComparePlay"
+          },
+          "similarity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EmbeddingSimilarity"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "similarity_unavailable_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similarity Unavailable Code"
+          },
+          "similarity_unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Similarity Unavailable Reason"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "left",
+          "right",
+          "similarity",
+          "similarity_unavailable_reason",
+          "similarity_unavailable_code",
+          "evidence",
+          "correspondence",
+          "descriptor_version",
+          "dataset_version",
+          "latency_ms",
+          "warnings"
+        ],
+        "title": "CompareResponse",
+        "type": "object"
+      },
       "ConditionGroup": {
         "additionalProperties": false,
         "properties": {
@@ -120,6 +326,97 @@
           "raw_transform"
         ],
         "title": "CoordinateInfo",
+        "type": "object"
+      },
+      "Correspondence": {
+        "additionalProperties": false,
+        "properties": {
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "pairs": {
+            "items": {
+              "$ref": "#/components/schemas/CorrespondencePair"
+            },
+            "title": "Pairs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "method",
+          "pairs"
+        ],
+        "title": "Correspondence",
+        "type": "object"
+      },
+      "CorrespondencePair": {
+        "additionalProperties": false,
+        "properties": {
+          "basis": {
+            "title": "Basis",
+            "type": "string"
+          },
+          "left_player_id": {
+            "title": "Left Player Id",
+            "type": "string"
+          },
+          "right_player_id": {
+            "title": "Right Player Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "left_player_id",
+          "right_player_id",
+          "basis"
+        ],
+        "title": "CorrespondencePair",
+        "type": "object"
+      },
+      "CosineReference": {
+        "additionalProperties": false,
+        "description": "Cosine similarity across this embedding space, measured at load time.",
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "nearest_neighbor_p05": {
+            "title": "Nearest Neighbor P05",
+            "type": "number"
+          },
+          "nearest_neighbor_p50": {
+            "title": "Nearest Neighbor P50",
+            "type": "number"
+          },
+          "nearest_neighbor_p95": {
+            "title": "Nearest Neighbor P95",
+            "type": "number"
+          },
+          "random_pair_mean": {
+            "title": "Random Pair Mean",
+            "type": "number"
+          },
+          "random_pair_p50": {
+            "title": "Random Pair P50",
+            "type": "number"
+          },
+          "random_pair_p95": {
+            "title": "Random Pair P95",
+            "type": "number"
+          }
+        },
+        "required": [
+          "random_pair_mean",
+          "random_pair_p50",
+          "random_pair_p95",
+          "nearest_neighbor_p05",
+          "nearest_neighbor_p50",
+          "nearest_neighbor_p95",
+          "description"
+        ],
+        "title": "CosineReference",
         "type": "object"
       },
       "CoveragePoint": {
@@ -266,6 +563,77 @@
           "generated_at"
         ],
         "title": "DatasetStatus",
+        "type": "object"
+      },
+      "EmbeddingSimilarity": {
+        "additionalProperties": false,
+        "properties": {
+          "cosine_distance": {
+            "title": "Cosine Distance",
+            "type": "number"
+          },
+          "cosine_reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CosineReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cosine_similarity": {
+            "title": "Cosine Similarity",
+            "type": "number"
+          },
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "left_rank_from_right": {
+            "title": "Left Rank From Right",
+            "type": "integer"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "rank_pool": {
+            "description": "Plays each rank is counted over.",
+            "title": "Rank Pool",
+            "type": "integer"
+          },
+          "representation": {
+            "default": "learned_embedding",
+            "enum": [
+              "learned_embedding",
+              "baseline_descriptor"
+            ],
+            "title": "Representation",
+            "type": "string"
+          },
+          "right_rank_from_left": {
+            "description": "1 + plays strictly closer to the left play than the right play is (exact, unfiltered corpus).",
+            "title": "Right Rank From Left",
+            "type": "integer"
+          },
+          "split_version": {
+            "title": "Split Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_version",
+          "dataset_version",
+          "split_version",
+          "cosine_similarity",
+          "cosine_distance",
+          "right_rank_from_left",
+          "left_rank_from_right",
+          "rank_pool",
+          "cosine_reference"
+        ],
+        "title": "EmbeddingSimilarity",
         "type": "object"
       },
       "ErrorBody": {
@@ -608,6 +976,167 @@
         "title": "EvaluationScope",
         "type": "object"
       },
+      "Evidence": {
+        "additionalProperties": false,
+        "description": "One observation about both plays. In search results ``left`` is the query\nplay and ``right`` the retrieved play.",
+        "properties": {
+          "decimals": {
+            "maximum": 3.0,
+            "minimum": 0.0,
+            "title": "Decimals",
+            "type": "integer"
+          },
+          "definition": {
+            "title": "Definition",
+            "type": "string"
+          },
+          "delta": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "right - left, for numeric values.",
+            "title": "Delta"
+          },
+          "frame_reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FrameReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "description": "Stable within the response, e.g. 'comparison.structure.target_separation'.",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "metadata",
+              "structural_metric"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "left_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Text"
+          },
+          "left_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left Value"
+          },
+          "missing_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Missing Reason"
+          },
+          "relation": {
+            "anyOf": [
+              {
+                "enum": [
+                  "same",
+                  "different",
+                  "unavailable"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Equality for discrete metadata; null for continuous measures.",
+            "title": "Relation"
+          },
+          "right_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right Text"
+          },
+          "right_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right Value"
+          },
+          "source": {
+            "description": "pre_snap_context: known before the snap. charted_label: charted after the play. tracking: computed from observed tracking.",
+            "enum": [
+              "pre_snap_context",
+              "charted_label",
+              "tracking"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "source",
+          "label",
+          "unit",
+          "decimals",
+          "delta",
+          "relation",
+          "definition"
+        ],
+        "title": "Evidence",
+        "type": "object"
+      },
       "Facets": {
         "additionalProperties": false,
         "properties": {
@@ -800,6 +1329,41 @@
           "o"
         ],
         "title": "FramePlayer",
+        "type": "object"
+      },
+      "FrameReference": {
+        "additionalProperties": false,
+        "properties": {
+          "anchor": {
+            "enum": [
+              "last_observed_frame",
+              "last_2s_window"
+            ],
+            "title": "Anchor",
+            "type": "string"
+          },
+          "left_frame_ids": {
+            "description": "[frame_id] for a frame, [first, last] for a window.",
+            "items": {
+              "type": "integer"
+            },
+            "title": "Left Frame Ids",
+            "type": "array"
+          },
+          "right_frame_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Right Frame Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "anchor",
+          "left_frame_ids",
+          "right_frame_ids"
+        ],
+        "title": "FrameReference",
         "type": "object"
       },
       "FramesPayload": {
@@ -1005,11 +1569,15 @@
           "models": {
             "$ref": "#/components/schemas/HealthModels"
           },
+          "retrieval": {
+            "$ref": "#/components/schemas/HealthRetrieval"
+          },
           "service": {
             "title": "Service",
             "type": "string"
           },
           "status": {
+            "description": "degraded when the dataset is not loaded or retrieval is configured but not ready.",
             "enum": [
               "ok",
               "degraded"
@@ -1027,7 +1595,8 @@
           "service",
           "version",
           "dataset",
-          "models"
+          "models",
+          "retrieval"
         ],
         "title": "Health",
         "type": "object"
@@ -1119,6 +1688,224 @@
           "errors"
         ],
         "title": "HealthModels",
+        "type": "object"
+      },
+      "HealthRetrieval": {
+        "additionalProperties": false,
+        "description": "Similarity retrieval (PostgreSQL + pgvector). Read from a cached status\ncheck, not a table scan.",
+        "properties": {
+          "backend": {
+            "anyOf": [
+              {
+                "enum": [
+                  "pgvector",
+                  "memory"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backend"
+          },
+          "database_reachable": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Database Reachable"
+          },
+          "dataset_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dataset Version"
+          },
+          "embedding_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Count"
+          },
+          "hnsw_index": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hnsw Index"
+          },
+          "model_version": {
+            "description": "Embedding set searched by default.",
+            "title": "Model Version",
+            "type": "string"
+          },
+          "pending_migrations": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pending Migrations",
+            "type": "array"
+          },
+          "pgvector_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pgvector Version"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          },
+          "server_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Server Version"
+          },
+          "split_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Split Version"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "unavailable",
+              "disabled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "reason",
+          "database_reachable",
+          "backend",
+          "server_version",
+          "pgvector_version",
+          "schema_version",
+          "pending_migrations",
+          "model_version",
+          "embedding_count",
+          "dataset_version",
+          "split_version",
+          "hnsw_index"
+        ],
+        "title": "HealthRetrieval",
+        "type": "object"
+      },
+      "HnswSettings": {
+        "additionalProperties": false,
+        "properties": {
+          "ef_construction": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ef Construction"
+          },
+          "ef_search": {
+            "title": "Ef Search",
+            "type": "integer"
+          },
+          "index": {
+            "title": "Index",
+            "type": "string"
+          },
+          "iterative_scan": {
+            "title": "Iterative Scan",
+            "type": "string"
+          },
+          "m": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "M"
+          },
+          "max_scan_tuples": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Scan Tuples"
+          }
+        },
+        "required": [
+          "index",
+          "m",
+          "ef_construction",
+          "ef_search",
+          "iterative_scan",
+          "max_scan_tuples"
+        ],
+        "title": "HnswSettings",
         "type": "object"
       },
       "HorizonPoint": {
@@ -2796,6 +3583,469 @@
         "title": "RetrievalModelInfo",
         "type": "object"
       },
+      "RetrievalProvenance": {
+        "additionalProperties": false,
+        "properties": {
+          "backend": {
+            "enum": [
+              "pgvector",
+              "memory"
+            ],
+            "title": "Backend",
+            "type": "string"
+          },
+          "candidates": {
+            "description": "Plays eligible after filters, excluding the query play.",
+            "title": "Candidates",
+            "type": "integer"
+          },
+          "corpus_size": {
+            "description": "Stored embeddings for this model version.",
+            "title": "Corpus Size",
+            "type": "integer"
+          },
+          "cosine_reference": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CosineReference"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "database_ms": {
+            "description": "The read-only database transaction.",
+            "title": "Database Ms",
+            "type": "number"
+          },
+          "dataset_version": {
+            "title": "Dataset Version",
+            "type": "string"
+          },
+          "embedding_dimension": {
+            "title": "Embedding Dimension",
+            "type": "integer"
+          },
+          "hnsw": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HnswSettings"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Index and per-request search settings when the index ran."
+          },
+          "latency_ms": {
+            "description": "Server-side, whole request.",
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "metric": {
+            "const": "cosine",
+            "default": "cosine",
+            "title": "Metric",
+            "type": "string"
+          },
+          "mode": {
+            "description": "Requested mode.",
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "normalization": {
+            "title": "Normalization",
+            "type": "string"
+          },
+          "plan": {
+            "description": "What PostgreSQL executed (read from EXPLAIN in the same transaction). Approximate requests run exactly when the planner estimates a scan is cheaper, e.g. under very selective filters.",
+            "enum": [
+              "hnsw_index_scan",
+              "exact_scan"
+            ],
+            "title": "Plan",
+            "type": "string"
+          },
+          "representation": {
+            "enum": [
+              "learned_embedding",
+              "baseline_descriptor"
+            ],
+            "title": "Representation",
+            "type": "string"
+          },
+          "search_ms": {
+            "description": "The nearest-neighbour statement alone.",
+            "title": "Search Ms",
+            "type": "number"
+          },
+          "self_match_excluded": {
+            "title": "Self Match Excluded",
+            "type": "boolean"
+          },
+          "split_version": {
+            "title": "Split Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mode",
+          "plan",
+          "representation",
+          "backend",
+          "model_version",
+          "dataset_version",
+          "split_version",
+          "embedding_dimension",
+          "normalization",
+          "corpus_size",
+          "candidates",
+          "self_match_excluded",
+          "hnsw",
+          "cosine_reference",
+          "latency_ms",
+          "database_ms",
+          "search_ms"
+        ],
+        "title": "RetrievalProvenance",
+        "type": "object"
+      },
+      "SimilarityFilters": {
+        "additionalProperties": false,
+        "description": "Optional metadata filters, applied in the database query (not afterwards).\n\nOnly pre-snap context and the temporal split are filterable. Charted labels\n(coverage, route) describe the play after the fact and are evidence only.",
+        "properties": {
+          "defense": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2,3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defense"
+          },
+          "down": {
+            "anyOf": [
+              {
+                "maximum": 4.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Down"
+          },
+          "field_position_max": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field Position Max"
+          },
+          "field_position_min": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Line of scrimmage, yards from the offense's own goal line.",
+            "title": "Field Position Min"
+          },
+          "offense": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z]{2,3}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offense"
+          },
+          "offense_formation": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Z_]{1,32}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "examples": [
+              "SHOTGUN"
+            ],
+            "title": "Offense Formation"
+          },
+          "quarter": {
+            "anyOf": [
+              {
+                "maximum": 5.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "5 = overtime.",
+            "title": "Quarter"
+          },
+          "splits": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "train",
+                    "validation",
+                    "test"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 3,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Temporal split of the retrieved plays (train weeks 1-14, validation 15-16, test 17-18).",
+            "title": "Splits"
+          },
+          "week_max": {
+            "anyOf": [
+              {
+                "maximum": 22.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Max"
+          },
+          "week_min": {
+            "anyOf": [
+              {
+                "maximum": 22.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week Min"
+          },
+          "yards_to_go_max": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yards To Go Max"
+          },
+          "yards_to_go_min": {
+            "anyOf": [
+              {
+                "maximum": 99.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yards To Go Min"
+          }
+        },
+        "title": "SimilarityFilters",
+        "type": "object"
+      },
+      "SimilarityQuery": {
+        "additionalProperties": false,
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/SimilarityFilters"
+          },
+          "k": {
+            "title": "K",
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "play_id": {
+            "title": "Play Id",
+            "type": "string"
+          },
+          "split": {
+            "enum": [
+              "train",
+              "validation",
+              "test"
+            ],
+            "title": "Split",
+            "type": "string"
+          }
+        },
+        "required": [
+          "play_id",
+          "split",
+          "model_version",
+          "k",
+          "mode",
+          "filters"
+        ],
+        "title": "SimilarityQuery",
+        "type": "object"
+      },
+      "SimilarityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "filters": {
+            "$ref": "#/components/schemas/SimilarityFilters"
+          },
+          "k": {
+            "default": 10,
+            "description": "Neighbours to return.",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "K",
+            "type": "integer"
+          },
+          "mode": {
+            "default": "approximate",
+            "description": "approximate: HNSW index (iterative scan). exact: full scan; the ground truth used to evaluate the index.",
+            "enum": [
+              "exact",
+              "approximate"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Embedding model; default: the served one.",
+            "title": "Model Version"
+          },
+          "play_id": {
+            "description": "PlayLens play ID.",
+            "examples": [
+              "2023123114-3710"
+            ],
+            "title": "Play Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "play_id"
+        ],
+        "title": "SimilarityRequest",
+        "type": "object"
+      },
+      "SimilarityResult": {
+        "additionalProperties": false,
+        "properties": {
+          "cosine_distance": {
+            "description": "1 - cosine similarity; 0 = same direction.",
+            "title": "Cosine Distance",
+            "type": "number"
+          },
+          "cosine_similarity": {
+            "description": "Cosine similarity of the learned embeddings. Not a probability.",
+            "title": "Cosine Similarity",
+            "type": "number"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/Evidence"
+            },
+            "title": "Evidence",
+            "type": "array"
+          },
+          "play": {
+            "$ref": "#/components/schemas/PlaySummary"
+          },
+          "play_id": {
+            "title": "Play Id",
+            "type": "string"
+          },
+          "rank": {
+            "minimum": 1.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "split": {
+            "enum": [
+              "train",
+              "validation",
+              "test"
+            ],
+            "title": "Split",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rank",
+          "play_id",
+          "cosine_distance",
+          "cosine_similarity",
+          "split",
+          "play",
+          "evidence"
+        ],
+        "title": "SimilarityResult",
+        "type": "object"
+      },
       "SimilarityScores": {
         "additionalProperties": false,
         "properties": {
@@ -2821,6 +4071,49 @@
           "scores"
         ],
         "title": "SimilarityScores",
+        "type": "object"
+      },
+      "SimilaritySearchResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence_note": {
+            "default": "Evidence lists deterministic observations about both plays: pre-snap context, charted labels, and tracking descriptors. None of them is a model input, and none explains why the learned embedding places the plays close together.",
+            "title": "Evidence Note",
+            "type": "string"
+          },
+          "query": {
+            "$ref": "#/components/schemas/SimilarityQuery"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SimilarityResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "retrieval": {
+            "$ref": "#/components/schemas/RetrievalProvenance"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "query",
+          "results",
+          "retrieval",
+          "warnings"
+        ],
+        "title": "SimilaritySearchResponse",
         "type": "object"
       },
       "SliceMetrics": {
@@ -3526,12 +4819,74 @@
     }
   },
   "info": {
-    "description": "\nReal NFL tracking data (NFL Big Data Bowl 2026 Analytics) in the PlayLens canonical\ncoordinate frame. Observed frames, held-out future trajectories, and post-play\nmetadata are separate resources. Trajectory forecasts come from a trained\nmodel artifact (artifacts/models/); without one, model routes answer 503.\n",
+    "description": "\nReal NFL tracking data (NFL Big Data Bowl 2026 Analytics) in the PlayLens canonical\ncoordinate frame. Observed frames, held-out future trajectories, and post-play\nmetadata are separate resources. Trajectory forecasts come from a trained\nmodel artifact (artifacts/models/); without one, model routes answer 503.\nSimilar plays come from PostgreSQL + pgvector over the model's learned play\nembeddings; cosine similarity is not a probability.\n",
     "title": "PlayLens API",
     "version": "0.2.0"
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/compare": {
+      "post": {
+        "description": "Play identities, embedding similarity with exact ranks (when retrieval is\navailable), metadata and structural evidence, and a role-based player\ncorrespondence. Frames come from /plays/{id}/frames.",
+        "operationId": "compare_api_v1_compare_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "play_not_found, embedding_unavailable (the play has no stored embedding), or model_version_unavailable."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "invalid_play_id, invalid_k, invalid_filters, invalid_comparison, or another malformed request."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "database_unavailable or retrieval_unavailable (not migrated, not loaded, or built for another dataset); dataset_unavailable."
+          }
+        },
+        "summary": "Deterministic comparison of two plays",
+        "tags": [
+          "retrieval"
+        ]
+      }
+    },
     "/api/v1/dataset": {
       "get": {
         "operationId": "dataset_api_v1_dataset_get",
@@ -3634,7 +4989,7 @@
     },
     "/api/v1/models": {
       "get": {
-        "description": "Models loaded from trained artifacts, with dataset/split versions and metrics.\n\nEmpty when no artifact exists; the web app then keeps forecasts unavailable.",
+        "description": "Models loaded from trained artifacts, with dataset/split versions and metrics.\n\nEmpty when no artifact exists; the web app then keeps forecasts unavailable.\n``retrieval`` is set on the model whose play embeddings are loaded and ready\nfor similarity search (from the last retrieval status check).",
         "operationId": "list_models_api_v1_models_get",
         "responses": {
           "200": {
@@ -4310,6 +5665,68 @@
         ]
       }
     },
+    "/api/v1/search/similar": {
+      "post": {
+        "description": "Real nearest-neighbour retrieval in PostgreSQL + pgvector over the frozen\nPhase 3 embeddings. The query play is never returned. Filters run inside the\ndatabase query. Each result carries deterministic metadata and tracking\nevidence; cosine similarity is not a probability.",
+        "operationId": "search_similar_api_v1_search_similar_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimilarityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimilaritySearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "play_not_found, embedding_unavailable (the play has no stored embedding), or model_version_unavailable."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "invalid_play_id, invalid_k, invalid_filters, invalid_comparison, or another malformed request."
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "database_unavailable or retrieval_unavailable (not migrated, not loaded, or built for another dataset); dataset_unavailable."
+          }
+        },
+        "summary": "Nearest plays by cosine similarity of learned play embeddings",
+        "tags": [
+          "retrieval"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "health_health_get",
@@ -4325,7 +5742,7 @@
             "description": "Successful Response"
           }
         },
-        "summary": "Liveness and dataset readiness",
+        "summary": "Liveness, dataset readiness, and retrieval readiness",
         "tags": [
           "health"
         ]

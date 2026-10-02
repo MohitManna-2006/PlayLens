@@ -3,7 +3,7 @@
  * Separates network, user (4xx), server (5xx), and unavailable failures so each
  * screen can show the right state. It never substitutes fixture data.
  */
-import type { PlayQuery, TrajectoryRequest } from "@/lib/contracts";
+import type { CompareRequest, PlayQuery, SimilarityRequest, TrajectoryRequest } from "@/lib/contracts";
 import { ApiError, ErrorEnvelopeSchema } from "@/lib/contracts";
 import type { RawSource } from "./types";
 
@@ -80,19 +80,19 @@ export class HttpSource implements RawSource {
   listModels(signal?: AbortSignal) {
     return this.request(`/api/v1/models`, { signal });
   }
-  findSimilar() {
-    return notServed("Similar-play retrieval");
+  private post(path: string, body: unknown, signal?: AbortSignal) {
+    return this.request(path, { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" }, signal });
   }
-  compare() {
-    return notServed("Structural comparison", "the compare endpoint is not implemented");
+  /** Real retrieval in PostgreSQL + pgvector. Filters travel to the database query; nothing is filtered here. */
+  findSimilar(req: SimilarityRequest, signal?: AbortSignal) {
+    const filters = Object.fromEntries(Object.entries(req.filters ?? {}).filter(([, v]) => v !== null && v !== undefined));
+    return this.post(`/api/v1/search/similar`, { ...req, filters }, signal);
+  }
+  compare(req: CompareRequest, signal?: AbortSignal) {
+    return this.post(`/api/v1/compare`, req, signal);
   }
   predictTrajectory(req: TrajectoryRequest, signal?: AbortSignal) {
-    return this.request(`/api/v1/predict/trajectory`, {
-      method: "POST",
-      body: JSON.stringify(req),
-      headers: { "Content-Type": "application/json" },
-      signal,
-    });
+    return this.post(`/api/v1/predict/trajectory`, req, signal);
   }
   getPlayLabConfig() {
     return notServed("PlayLab");

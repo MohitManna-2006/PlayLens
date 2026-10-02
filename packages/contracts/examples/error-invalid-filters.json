@@ -1,0 +1,19 @@
+{
+  "error": {
+    "code": "invalid_filters",
+    "details": {
+      "errors": [
+        {
+          "loc": [
+            "body",
+            "filters"
+          ],
+          "msg": "Value error, yards_to_go_min (9) is greater than yards_to_go_max (3)."
+        }
+      ]
+    },
+    "message": "body.filters: Value error, yards_to_go_min (9) is greater than yards_to_go_max (3).",
+    "request_id": "example",
+    "status": 422
+  }
+}

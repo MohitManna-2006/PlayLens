@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ApiError } from "@/lib/contracts";
+import { ApiError, isRetrievalDown } from "@/lib/contracts";
 import { HttpSource } from "./http";
 import { createClient } from "./index";
 
@@ -79,10 +79,40 @@ describe("HTTP data source", () => {
 
   it("marks unserved model capabilities unavailable without calling the network", async () => {
     const { http, calls } = source(() => json({}));
-    for (const p of [http.findSimilar(), http.getPlayLabConfig(), http.runCounterfactual(), http.compare()]) {
+    for (const p of [http.getPlayLabConfig(), http.runCounterfactual()]) {
       await expect(p).rejects.toMatchObject({ kind: "unavailable" });
     }
     expect(calls).toEqual([]);
+  });
+
+  it("posts similarity searches with filters for the database, dropping empty ones", async () => {
+    const seen: Array<{ url: string; method?: string; body?: unknown }> = [];
+    const { http } = source((url, init) => {
+      seen.push({ url, method: init?.method, body: init?.body ? JSON.parse(String(init.body)) : undefined });
+      return json({});
+    });
+    await http.findSimilar({ play_id: "2023123114-3710", k: 10, mode: "exact", filters: { down: 3, quarter: null } });
+    await http.compare({ left_play_id: "2023123114-3710", right_play_id: "2023100113-110" });
+    expect(seen[0]).toEqual({
+      url: "http://api.test/api/v1/search/similar",
+      method: "POST",
+      body: { play_id: "2023123114-3710", k: 10, mode: "exact", filters: { down: 3 } },
+    });
+    expect(seen[1]).toEqual({
+      url: "http://api.test/api/v1/compare",
+      method: "POST",
+      body: { left_play_id: "2023123114-3710", right_play_id: "2023100113-110" },
+    });
+  });
+
+  it("reports a retrieval outage as a typed, retryable server error", async () => {
+    const { http } = source(() => envelope(503, "database_unavailable", "No database connection within 2 s."));
+    const err = await http.findSimilar({ play_id: "1-1", k: 5 }).catch((e: unknown) => e);
+    expect(err).toMatchObject({ kind: "server", status: 503, code: "database_unavailable" });
+    expect(isRetrievalDown(err)).toBe(true);
+    const missing = await (source(() => envelope(404, "embedding_unavailable", "No embedding.")).http.findSimilar({ play_id: "1-1", k: 5 }).catch((e: unknown) => e));
+    expect(missing).toMatchObject({ kind: "user", code: "embedding_unavailable" });
+    expect(isRetrievalDown(missing)).toBe(false);
   });
 
   it("propagates aborts untouched", async () => {

@@ -34,7 +34,8 @@ def manifest() -> dict[str, Any]:
 
 @pytest.fixture(scope="module")
 def real_client() -> Iterator[TestClient]:
-    with TestClient(create_app(Settings(log_level="WARNING"))) as c:
+    settings = Settings(database_url=None, log_level="WARNING")
+    with TestClient(create_app(settings)) as c:
         yield c
 
 

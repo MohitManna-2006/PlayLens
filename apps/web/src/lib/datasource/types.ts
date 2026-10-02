@@ -1,7 +1,8 @@
 import type {
+  CompareRequest,
   CounterfactualRequest,
   PlayQuery,
-  SimilarRequest,
+  SimilarityRequest,
   TrajectoryRequest,
 } from "@/lib/contracts";
 
@@ -20,8 +21,8 @@ export interface RawSource {
   /** Held-out actual future trajectories. Only requested when the play reports some. */
   getFuture(playId: string, signal?: AbortSignal): Promise<unknown>;
   listModels(signal?: AbortSignal): Promise<unknown>;
-  findSimilar(req: SimilarRequest, signal?: AbortSignal): Promise<unknown>;
-  compare(left: string, right: string, signal?: AbortSignal): Promise<unknown>;
+  findSimilar(req: SimilarityRequest, signal?: AbortSignal): Promise<unknown>;
+  compare(req: CompareRequest, signal?: AbortSignal): Promise<unknown>;
   predictTrajectory(req: TrajectoryRequest, signal?: AbortSignal): Promise<unknown>;
   getPlayLabConfig(playId: string, signal?: AbortSignal): Promise<unknown>;
   runCounterfactual(req: CounterfactualRequest, signal?: AbortSignal): Promise<unknown>;

@@ -1,5 +1,7 @@
 # Phase 3: ML foundation
 
+> Phase 4 consumes this phase's embedding export for similarity retrieval without changing it; see [phase-4-retrieval-compare.md](phase-4-retrieval-compare.md).
+
 Phase 3 trains the first PlayLens model on the canonical Phase 2 data, evaluates it against constant-velocity baselines, exports a versioned artifact and play embeddings, and serves real forecasts through the API to the existing Play view.
 
 Decisions: [ADR-0003 split and leakage policy](../decisions/ADR-0003-ml-split-and-leakage-policy.md), [ADR-0004 encoder and trajectory head](../decisions/ADR-0004-spatial-temporal-encoder.md). Results: [model card](../model-cards/trajectory-gnn-transformer-v1.md), [evaluation summary](../evaluation/trajectory-gnn-transformer-v1.md).

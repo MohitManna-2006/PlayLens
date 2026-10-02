@@ -3,6 +3,7 @@ from fastapi import Request
 from ..errors import DatasetUnavailable
 from ..services.models import ModelRegistry, PredictionService
 from ..services.plays import PlayService
+from ..services.retrieval import RetrievalService
 
 
 def get_play_service(request: Request) -> PlayService:
@@ -23,3 +24,8 @@ def get_model_registry(request: Request) -> ModelRegistry:
 
 def get_prediction_service(request: Request) -> PredictionService:
     return PredictionService(get_model_registry(request), get_play_service(request))
+
+
+def get_retrieval_service(request: Request) -> RetrievalService:
+    service: RetrievalService = request.app.state.retrieval
+    return service

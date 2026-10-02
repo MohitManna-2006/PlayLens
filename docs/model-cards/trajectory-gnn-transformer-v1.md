@@ -5,7 +5,7 @@
 | Model name | `trajectory-gnn-transformer` |
 | Version | `trajectory-gnn-transformer-v1` |
 | Task | Future positions of the dataset's target players after the last observed frame |
-| Status | Served by the API on CPU; drawn in the Play view's predicted-path overlay |
+| Status | Served by the API on CPU; drawn in the Play view's predicted-path overlay. Its play embeddings power Similar Plays and Compare (Phase 4). |
 | Run | `trajectory-gnn-transformer-20261001T031301Z-bb8cfa` (MLflow `9de5c7e09c3e4e9faa6e4882fe626fd6`) |
 | Dataset | `nfl_bdb_2026_analytics@full-91dc5311e8c7` (NFL Big Data Bowl 2026 Analytics, 2023 season, 14,108 plays) |
 | Split | `temporal-weeks-v1-b39c53db8a01`: train weeks 1–14 (10,862 plays), validation 15–16 (1,687), test 17–18 (1,559) |
@@ -66,4 +66,6 @@ Showing, in PlayLens, where the model expected target players to go after the pa
 
 ## Embeddings
 
-The same encoder's 128-d play embedding is exported for all 14,108 plays (`data/processed/.../embeddings/trajectory-gnn-transformer-v1.parquet`, manifest committed). Nearest-neighbour label agreement beats a down/distance/quarter/field-zone baseline on every charted label checked; see the evaluation summary. No retrieval feature uses it yet.
+The same encoder's 128-d play embedding is exported for all 14,108 plays (`data/processed/.../embeddings/trajectory-gnn-transformer-v1.parquet`, manifest committed). Nearest-neighbour label agreement beats a down/distance/quarter/field-zone baseline on every charted label checked; see the evaluation summary.
+
+Since Phase 4 these exported vectors, unchanged, are stored in PostgreSQL + pgvector and power Similar Plays and Compare ([phase-4-retrieval-compare.md](../architecture/phase-4-retrieval-compare.md)). HNSW recall against exact search and retrieval latency are in [retrieval-v1.md](../evaluation/retrieval-v1.md). Cosine similarity between these embeddings is a learned-representation distance, not a probability and not a statement that two plays are tactically equivalent; the space is anisotropic (random pairs average about 0.44).

@@ -152,15 +152,16 @@ export function separationEvidence(
 export async function similarEvidence(client: PlayLensClient, playId: string, signal: AbortSignal): Promise<Evidence> {
   try {
     const r = await client.findSimilar({ play_id: playId, k: 5 }, signal);
+    const p = r.retrieval;
     const source: EvidenceSource = {
       id: "s1",
       tool: "find_similar_plays",
-      play_ids: [playId, ...r.results.map((x) => x.play.id)],
+      play_ids: [playId, ...r.results.map((x) => x.play_id)],
       player_ids: [],
       frame_range: null,
-      definition: `Cosine similarity between ${r.model_kind === "learned" ? "learned play embeddings" : "baseline play descriptors"} (${r.scope.description}; self-match ${r.scope.self_match_excluded ? "excluded" : "included"}). Not a probability.`,
-      dataset_version: null,
-      model_version: r.model_version,
+      definition: `Cosine similarity between ${p.representation === "learned_embedding" ? "learned play embeddings" : "baseline play descriptors"} (${p.plan === "hnsw_index_scan" ? "HNSW index" : "exact scan"} over ${p.corpus_size} plays; self-match ${p.self_match_excluded ? "excluded" : "included"}). Not a probability.`,
+      dataset_version: p.dataset_version,
+      model_version: p.model_version,
       request_id: r.request_id,
     };
     const top = r.results[0];
@@ -170,13 +171,13 @@ export async function similarEvidence(client: PlayLensClient, playId: string, si
         ? [
             {
               type: "play_references",
-              title: `Most similar plays · ${r.model_version}`,
-              model_version: r.model_version,
+              title: `Most similar plays · ${p.model_version}`,
+              model_version: p.model_version,
               items: r.results.map((x) => ({
-                play_id: x.play.id,
+                play_id: x.play_id,
                 label: `${x.play.away_team} at ${x.play.home_team}`,
                 meta: x.play.description,
-                score: x.score,
+                score: x.cosine_similarity,
                 source_id: "s1",
               })),
             },
@@ -184,8 +185,8 @@ export async function similarEvidence(client: PlayLensClient, playId: string, si
         : [],
       actions: top
         ? [
-            { type: "open_play", play_id: top.play.id, label: `Open play ${top.play.id}` },
-            { type: "compare_plays", left_play_id: playId, right_play_id: top.play.id, label: `Compare with ${top.play.id}` },
+            { type: "open_play", play_id: top.play_id, label: `Open play ${top.play_id}` },
+            { type: "compare_plays", left_play_id: playId, right_play_id: top.play_id, label: `Compare with ${top.play_id}` },
           ]
         : [],
       notices: r.results.length ? [] : ["The retrieval index returned no results for this play."],
@@ -197,7 +198,7 @@ export async function similarEvidence(client: PlayLensClient, playId: string, si
 
 export async function compareEvidence(client: PlayLensClient, left: string, right: string, signal: AbortSignal): Promise<Evidence> {
   try {
-    const r = await client.compare(left, right, signal);
+    const r = await client.compare({ left_play_id: left, right_play_id: right }, signal);
     const sources: EvidenceSource[] = [
       {
         id: "s1",
@@ -205,26 +206,29 @@ export async function compareEvidence(client: PlayLensClient, left: string, righ
         play_ids: [left, right],
         player_ids: [],
         frame_range: null,
-        definition: `${r.window}. ${r.source}.`,
-        dataset_version: null,
-        model_version: null,
+        definition: `Deterministic evidence (${r.descriptor_version}): ${r.evidence_note}`,
+        dataset_version: r.dataset_version,
+        model_version: r.similarity?.model_version ?? null,
         request_id: r.request_id,
       },
     ];
+    const metrics = r.evidence.filter((e) => e.kind === "structural_metric");
     const rows = (side: "left" | "right") =>
-      r.measures.map((m, i) => ({
+      metrics.map((m, i) => ({
         ref: i + 1,
         label: m.label,
-        value: m[side],
-        unit: m.unit,
+        value: side === "left" ? m.left_value : m.right_value,
+        unit: m.unit ?? "",
         decimals: m.decimals,
-        missing_reason: m[side] === null ? (m.missing_reason ?? "Unavailable") : null,
-        frame_id: null,
+        missing_reason: (side === "left" ? m.left_value : m.right_value) === null ? (m.missing_reason ?? "Unavailable") : null,
+        frame_id: m.frame_reference ? (side === "left" ? m.frame_reference.left_frame_ids : m.frame_reference.right_frame_ids).at(-1) ?? null : null,
         source_id: "s1",
       }));
     const notices: string[] = [];
     if (r.similarity) {
-      notices.push(`Cosine similarity ${r.similarity.score.toFixed(3)} · ${r.similarity.model_version} (${r.similarity.model_kind}). Not a probability.`);
+      notices.push(
+        `Cosine similarity ${r.similarity.cosine_similarity.toFixed(3)} · ${r.similarity.model_version}; the right play ranks #${r.similarity.right_rank_from_left} among the left play's neighbours. Not a probability.`,
+      );
     } else if (r.similarity_unavailable_reason) {
       notices.push(`Similarity unavailable: ${r.similarity_unavailable_reason}`);
     }

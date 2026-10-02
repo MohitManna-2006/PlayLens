@@ -200,6 +200,7 @@ def test_a_corrupted_artifact_is_reported_and_never_served(
         data_root=root,
         subset="full",
         model_dir=tmp_path / "models",
+        database_url=None,
         log_level="WARNING",
     )
     with TestClient(create_app(settings)) as c:

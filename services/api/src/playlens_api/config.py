@@ -4,6 +4,13 @@ from playlens_ml.data.bdb2026.spec import DATASET_NAME
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .retrieval.db import DEFAULT_DATABASE_URL
+
+# The Phase 3 model whose exported play embeddings power retrieval.
+DEFAULT_EMBEDDING_MODEL = "trajectory-gnn-transformer-v1"
+# Measured on the full corpus: see docs/evaluation/retrieval-v1.md.
+DEFAULT_EF_SEARCH = 40
+
 
 class Settings(BaseSettings):
     """API settings, read from ``PLAYLENS_*`` environment variables."""
@@ -38,8 +45,36 @@ class Settings(BaseSettings):
     tracking_cache_size: int = Field(
         default=128, ge=1, description="Plays whose frames stay cached in memory."
     )
+    database_url: str | None = Field(
+        default=DEFAULT_DATABASE_URL,
+        description=(
+            "PostgreSQL + pgvector for similarity retrieval (docker compose service "
+            "'postgres'). Empty disables retrieval; replay and forecasts still work."
+        ),
+    )
+    embedding_model_version: str = Field(
+        default=DEFAULT_EMBEDDING_MODEL,
+        description="Embedding set searched when a request names no model version.",
+    )
+    hnsw_ef_search: int = Field(
+        default=DEFAULT_EF_SEARCH,
+        ge=1,
+        le=1000,
+        description=(
+            "HNSW candidate list size for approximate search (raised to k when "
+            "k is larger). Chosen from docs/evaluation/retrieval-v1.md."
+        ),
+    )
+    db_pool_max_size: int = Field(
+        default=4, ge=1, le=32, description="Pooled connections (read-only)."
+    )
+    db_timeout_s: float = Field(
+        default=2.0,
+        gt=0,
+        description="Wait for a pooled connection, and statement timeout.",
+    )
 
-    @field_validator("data_root", "model_dir", mode="before")
+    @field_validator("data_root", "model_dir", "database_url", mode="before")
     @classmethod
     def _blank_is_default(cls, v: object) -> object:
         return None if v in ("", None) else v

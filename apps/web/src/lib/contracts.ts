@@ -7,7 +7,7 @@
  * Identity: a play resource's `id` is the PlayLens play ID "<game_id>-<play_id>"
  * (lib/playId). `game_id` and `play_id` are the NFL natural key; `play_id` alone
  * repeats across games. Requests for model features (trajectory, similarity,
- * PlayLab) still name the PlayLens ID `play_id`; those endpoints are not served yet.
+ * PlayLab) name the PlayLens ID `play_id`.
  *
  * Coordinates are CANONICAL yards: x ∈ [0, 120] along the long axis including
  * both end zones, y ∈ [0, 53⅓] across the field, and the offense always attacks
@@ -428,65 +428,196 @@ export type TrajectoryPrediction = z.infer<typeof TrajectoryPredictionSchema>;
 
 /* ---------- Similarity and compare ---------- */
 
-export const SimilarRequestSchema = z.object({
-  play_id: z.string(),
-  k: z.number().int().positive(),
-});
-export type SimilarRequest = z.infer<typeof SimilarRequestSchema>;
+/**
+ * Similar plays come from POST /api/v1/search/similar: nearest neighbours by
+ * cosine distance between learned play embeddings, in PostgreSQL + pgvector.
+ * Cosine similarity is not a probability or a percentage; the embedding space is
+ * anisotropic, so responses carry the space's own reference distribution.
+ */
+export const RetrievalModeSchema = z.enum(["exact", "approximate"]);
+export type RetrievalMode = z.infer<typeof RetrievalModeSchema>;
 
-export const SimilarResultSchema = z.object({
-  request_id: z.string(),
-  source_play_id: z.string(),
-  model_version: z.string(),
-  model_kind: ModelKindSchema,
-  scope: z.object({
-    description: z.string(),
-    corpus_size: z.number().int(),
-    index: z.enum(["exact", "hnsw"]),
-    self_match_excluded: z.boolean(),
-  }),
-  results: z.array(
-    z.object({
-      rank: z.number().int(),
-      score: z.number(),
-      play: PlaySummarySchema,
-    }),
-  ),
-  latency_ms: z.number(),
-});
-export type SimilarResult = z.infer<typeof SimilarResultSchema>;
+export const SplitSchema = z.enum(["train", "validation", "test"]);
+export type Split = z.infer<typeof SplitSchema>;
+/** Split of a retrieved or compared play; "unknown" only from the synthetic fixture. */
+export const PlaySplitSchema = z.enum(["train", "validation", "test", "unknown"]);
+export type PlaySplit = z.infer<typeof PlaySplitSchema>;
 
-export const CompareMeasureSchema = z.object({
-  key: z.string(),
+/** Filters run inside the database query. Pre-snap context and split only. */
+export const SimilarityFiltersSchema = z.object({
+  down: nullableInt,
+  yards_to_go_min: nullableInt,
+  yards_to_go_max: nullableInt,
+  quarter: nullableInt,
+  week_min: nullableInt,
+  week_max: nullableInt,
+  offense: nullableString,
+  defense: nullableString,
+  offense_formation: nullableString,
+  field_position_min: nullableNumber,
+  field_position_max: nullableNumber,
+  splits: z.array(SplitSchema).nullable(),
+});
+export type SimilarityFilters = z.infer<typeof SimilarityFiltersSchema>;
+
+export interface SimilarityRequest {
+  play_id: string;
+  k: number;
+  mode?: RetrievalMode;
+  model_version?: string | null;
+  filters?: Partial<SimilarityFilters>;
+}
+
+/** One observation about both plays. In search results `left` is the query play. */
+export const EvidenceSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["metadata", "structural_metric"]),
+  source: z.enum(["pre_snap_context", "charted_label", "tracking"]),
   label: z.string(),
-  unit: z.string(),
+  left_value: nullableNumber,
+  right_value: nullableNumber,
+  left_text: nullableString,
+  right_text: nullableString,
+  unit: nullableString,
   decimals: z.number().int().min(0).max(3),
-  left: nullableNumber,
-  right: nullableNumber,
-  missing_reason: z.string().nullable(),
+  delta: nullableNumber,
+  relation: z.enum(["same", "different", "unavailable"]).nullable(),
   definition: z.string(),
-});
-export type CompareMeasure = z.infer<typeof CompareMeasureSchema>;
-
-export const CompareResultSchema = z.object({
-  request_id: z.string(),
-  left_play_id: z.string(),
-  right_play_id: z.string(),
-  similarity: z
-    .object({ score: z.number(), model_version: z.string(), model_kind: ModelKindSchema })
+  missing_reason: nullableString,
+  frame_reference: z
+    .object({
+      anchor: z.enum(["last_observed_frame", "last_2s_window"]),
+      left_frame_ids: z.array(z.number().int()),
+      right_frame_ids: z.array(z.number().int()),
+    })
     .nullable(),
-  similarity_unavailable_reason: z.string().nullable(),
-  window: z.string(),
-  measures: z.array(CompareMeasureSchema),
+});
+export type Evidence = z.infer<typeof EvidenceSchema>;
+
+export const CosineReferenceSchema = z.object({
+  random_pair_mean: z.number(),
+  random_pair_p50: z.number(),
+  random_pair_p95: z.number(),
+  nearest_neighbor_p05: z.number(),
+  nearest_neighbor_p50: z.number(),
+  nearest_neighbor_p95: z.number(),
+  description: z.string(),
+});
+export type CosineReference = z.infer<typeof CosineReferenceSchema>;
+
+export const RetrievalProvenanceSchema = z.object({
+  mode: RetrievalModeSchema,
+  /** What the database executed; approximate requests can run exactly under selective filters. */
+  plan: z.enum(["hnsw_index_scan", "exact_scan"]),
+  metric: z.literal("cosine"),
+  representation: z.enum(["learned_embedding", "baseline_descriptor"]),
+  backend: z.enum(["pgvector", "memory"]),
+  model_version: z.string(),
+  dataset_version: z.string(),
+  split_version: z.string(),
+  embedding_dimension: z.number().int(),
+  normalization: z.string(),
+  corpus_size: z.number().int(),
+  candidates: z.number().int(),
+  self_match_excluded: z.boolean(),
+  hnsw: z
+    .object({
+      index: z.string(),
+      m: nullableInt,
+      ef_construction: nullableInt,
+      ef_search: z.number().int(),
+      iterative_scan: z.string(),
+      max_scan_tuples: nullableInt,
+    })
+    .nullable(),
+  cosine_reference: CosineReferenceSchema.nullable(),
+  latency_ms: z.number(),
+  database_ms: z.number(),
+  search_ms: z.number(),
+});
+export type RetrievalProvenance = z.infer<typeof RetrievalProvenanceSchema>;
+
+export const SimilarityResultSchema = z.object({
+  rank: z.number().int().min(1),
+  play_id: z.string(),
+  cosine_distance: z.number(),
+  cosine_similarity: z.number(),
+  split: PlaySplitSchema,
+  play: PlaySummarySchema,
+  evidence: z.array(EvidenceSchema),
+});
+export type SimilarityResult = z.infer<typeof SimilarityResultSchema>;
+
+export const SimilaritySearchResponseSchema = z.object({
+  request_id: z.string(),
+  query: z.object({
+    play_id: z.string(),
+    split: PlaySplitSchema,
+    model_version: z.string(),
+    k: z.number().int(),
+    mode: RetrievalModeSchema,
+    filters: SimilarityFiltersSchema,
+  }),
+  results: z.array(SimilarityResultSchema),
+  retrieval: RetrievalProvenanceSchema,
+  warnings: z.array(z.string()),
+  evidence_note: z.string(),
+});
+export type SimilaritySearchResponse = z.infer<typeof SimilaritySearchResponseSchema>;
+
+export interface CompareRequest {
+  left_play_id: string;
+  right_play_id: string;
+  model_version?: string | null;
+}
+
+export const ComparePlaySchema = z.object({
+  play_id: z.string(),
+  play: PlaySummarySchema,
+  split: PlaySplitSchema,
+  observed_frame_count: z.number().int(),
+  first_frame_id: z.number().int(),
+  /** Last observed frame: where the dataset's input window ends (forecast origin). */
+  last_frame_id: z.number().int(),
+  window_start_frame_id: nullableInt,
+});
+export type ComparePlay = z.infer<typeof ComparePlaySchema>;
+
+export const CompareResponseSchema = z.object({
+  request_id: z.string(),
+  left: ComparePlaySchema,
+  right: ComparePlaySchema,
+  similarity: z
+    .object({
+      representation: z.enum(["learned_embedding", "baseline_descriptor"]),
+      model_version: z.string(),
+      dataset_version: z.string(),
+      split_version: z.string(),
+      cosine_similarity: z.number(),
+      cosine_distance: z.number(),
+      /** 1 + plays strictly closer to the left play than the right one (exact). */
+      right_rank_from_left: z.number().int(),
+      left_rank_from_right: z.number().int(),
+      rank_pool: z.number().int(),
+      cosine_reference: CosineReferenceSchema.nullable(),
+    })
+    .nullable(),
+  similarity_unavailable_reason: nullableString,
+  similarity_unavailable_code: nullableString,
+  evidence: z.array(EvidenceSchema),
   correspondence: z
     .object({
       method: z.string(),
-      pairs: z.array(z.object({ left_player_id: z.string(), right_player_id: z.string() })),
+      pairs: z.array(z.object({ left_player_id: z.string(), right_player_id: z.string(), basis: z.string() })),
     })
     .nullable(),
-  source: z.string(),
+  descriptor_version: z.string(),
+  dataset_version: z.string(),
+  latency_ms: z.number(),
+  warnings: z.array(z.string()),
+  evidence_note: z.string(),
 });
-export type CompareResult = z.infer<typeof CompareResultSchema>;
+export type CompareResponse = z.infer<typeof CompareResponseSchema>;
 
 /* ---------- PlayLab ---------- */
 
@@ -748,4 +879,11 @@ export class ApiError extends Error {
 
 export function isUnavailable(err: unknown): boolean {
   return err instanceof ApiError && err.kind === "unavailable";
+}
+
+/** The retrieval store (database, schema, or loaded embeddings) is not ready. */
+export const RETRIEVAL_DOWN_CODES = ["retrieval_unavailable", "database_unavailable"] as const;
+
+export function isRetrievalDown(err: unknown): boolean {
+  return err instanceof ApiError && (err.kind === "unavailable" || RETRIEVAL_DOWN_CODES.some((c) => c === err.code));
 }

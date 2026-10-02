@@ -54,6 +54,58 @@ class DatasetUnavailable(ApiError):
     code = "dataset_unavailable"
 
 
+class RetrievalUnavailable(ApiError):
+    """Retrieval is disabled, not migrated, not loaded, or built for another
+    dataset. Replay and forecasts are unaffected."""
+
+    status = 503
+    code = "retrieval_unavailable"
+
+
+class DatabaseUnavailable(RetrievalUnavailable):
+    code = "database_unavailable"
+
+
+class EmbeddingUnavailable(ApiError):
+    """The play exists but has no stored embedding for the model version."""
+
+    status = 404
+    code = "embedding_unavailable"
+
+
+class ModelVersionUnavailable(ApiError):
+    """No embeddings are loaded for the requested model version."""
+
+    status = 404
+    code = "model_version_unavailable"
+
+
+class UnsupportedMode(ApiError):
+    status = 422
+    code = "unsupported_mode"
+
+
+class InvalidComparison(ApiError):
+    status = 422
+    code = "invalid_comparison"
+
+
+# Request-validation errors confined to one field get a specific code.
+FIELD_CODES = {"filters": "invalid_filters", "k": "invalid_k"}
+
+
+def validation_code(errors: list[dict[str, Any]]) -> str:
+    fields = {
+        str(e["loc"][1]) if len(e["loc"]) > 1 and e["loc"][0] == "body" else None
+        for e in errors
+    }
+    if len(fields) == 1:
+        (field,) = fields
+        if field in FIELD_CODES:
+            return FIELD_CODES[field]
+    return "invalid_request"
+
+
 def _request_id(request: Request) -> str | None:
     value = getattr(request.state, "request_id", None)
     return value if isinstance(value, str) else None
@@ -107,7 +159,7 @@ def install_error_handlers(app: FastAPI) -> None:
         return envelope(
             request,
             422,
-            "invalid_request",
+            validation_code(list(exc.errors())),
             "; ".join(problems) or "Invalid request.",
             {
                 "errors": [

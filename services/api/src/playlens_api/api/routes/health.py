@@ -4,11 +4,16 @@ from ... import __version__
 from ...schemas.health import Health, HealthDataset, HealthModels
 from ...services.models import ModelRegistry
 from ...services.plays import PlayService
+from ...services.retrieval import RetrievalService
 
 router = APIRouter(tags=["health"])
 
 
-@router.get("/health", response_model=Health, summary="Liveness and dataset readiness")
+@router.get(
+    "/health",
+    response_model=Health,
+    summary="Liveness, dataset readiness, and retrieval readiness",
+)
 def health(request: Request) -> Health:
     service: PlayService | None = getattr(request.app.state, "play_service", None)
     if service is None:
@@ -33,10 +38,14 @@ def health(request: Request) -> Health:
         loaded=[m.version for m in registry.models] if registry else [],
         errors=dict(registry.errors) if registry else {},
     )
+    retrieval_service: RetrievalService = request.app.state.retrieval
+    retrieval = retrieval_service.health()
+    healthy = dataset.loaded and retrieval.status != "unavailable"
     return Health(
-        status="ok" if dataset.loaded else "degraded",
+        status="ok" if healthy else "degraded",
         service="playlens-api",
         version=__version__,
         dataset=dataset,
         models=models,
+        retrieval=retrieval,
     )

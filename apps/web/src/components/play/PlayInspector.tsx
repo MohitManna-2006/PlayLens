@@ -309,7 +309,8 @@ function ModelAvailability({
 }) {
   if (error) return <StatusState kind="error" compact title="Model list unavailable">{error}</StatusState>;
   if (!models) return <div className="skeleton h-16 w-full" aria-label="Loading models" />;
-  const find = (task: ModelInfo["task"]) => models.find((m) => m.task === task && m.served) ?? null;
+  const find = (task: ModelInfo["task"]) =>
+    models.find((m) => m.served && (m.task === task || (task === "retrieval" && m.retrieval !== null))) ?? null;
   const rows: Array<{ task: string; model: ModelInfo | null; status: string }> = [
     {
       task: "Trajectory forecast",
@@ -319,7 +320,10 @@ function ModelAvailability({
     {
       task: "Similar plays",
       model: find("retrieval"),
-      status: find("retrieval") ? (series && series.snapIndex === null ? "Unavailable for this play: no snap event" : "On request") : "No model served",
+      status: (() => {
+        const r = find("retrieval")?.retrieval;
+        return r ? `On request · ${r.index === "hnsw" ? "HNSW index" : "exact search"} over ${r.corpus_size.toLocaleString()} plays` : "Retrieval store not ready";
+      })(),
     },
     {
       task: "PlayLab",

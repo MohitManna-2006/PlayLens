@@ -8,6 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { ZodType } from "zod";
 import {
+  CompareResponseSchema,
   DatasetStatusSchema,
   ErrorEnvelopeSchema,
   FacetsSchema,
@@ -17,6 +18,7 @@ import {
   ModelInfoSchema,
   PlayDetailSchema,
   PlayPageSchema,
+  SimilaritySearchResponseSchema,
   TrajectoryPredictionSchema,
 } from "@/lib/contracts";
 import { buildGroundTruth } from "@/lib/play/groundTruth";
@@ -47,8 +49,8 @@ const exampleSource: RawSource = {
   getFrames: async () => example("frames.json"),
   getFuture: async () => example("future.json"),
   listModels: async () => example("models.json"),
-  findSimilar: async () => null,
-  compare: async () => null,
+  findSimilar: async () => example("similar-plays.json"),
+  compare: async () => example("compare.json"),
   predictTrajectory: async () => null,
   getPlayLabConfig: async () => null,
   runCounterfactual: async () => null,
@@ -71,6 +73,33 @@ describe("API examples match the web contract exactly", () => {
     exact(ErrorEnvelopeSchema, "error-invalid-play-id.json");
     exact(ErrorEnvelopeSchema, "error-model-unavailable.json");
     exact(ErrorEnvelopeSchema, "error-unsupported-origin.json");
+    exact(SimilaritySearchResponseSchema, "similar-plays.json");
+    exact(SimilaritySearchResponseSchema, "similar-plays-empty.json");
+    exact(CompareResponseSchema, "compare.json");
+    exact(ErrorEnvelopeSchema, "error-retrieval-unavailable.json");
+    exact(ErrorEnvelopeSchema, "error-invalid-filters.json");
+  });
+
+  it("keeps similarity results ranked, self-excluded, and evidence IDs unique", async () => {
+    const client = createClient(exampleSource);
+    const r = await client.findSimilar({ play_id: "x", k: 3 });
+    expect(r.results.map((x) => x.rank)).toEqual(r.results.map((_, i) => i + 1));
+    expect(r.results.map((x) => x.play_id)).not.toContain(r.query.play_id);
+    const sims = r.results.map((x) => x.cosine_similarity);
+    expect([...sims].sort((a, b) => b - a)).toEqual(sims);
+    for (const x of r.results) {
+      const ids = x.evidence.map((e) => e.id);
+      expect(new Set(ids).size).toBe(ids.length);
+      expect(x.cosine_similarity).toBeCloseTo(1 - x.cosine_distance, 4);
+    }
+    expect(r.retrieval.self_match_excluded).toBe(true);
+    const empty = SimilaritySearchResponseSchema.parse(example("similar-plays-empty.json"));
+    expect(empty.results).toEqual([]);
+    expect(empty.warnings[0]).toMatch(/Only 0 plays match/);
+    const c = await client.compare({ left_play_id: r.query.play_id, right_play_id: r.results[0].play_id });
+    expect(c.similarity?.right_rank_from_left).toBe(1);
+    expect(c.evidence.every((e) => e.id.startsWith("comparison."))).toBe(true);
+    expect(ErrorEnvelopeSchema.parse(example("error-invalid-filters.json")).error.code).toBe("invalid_filters");
   });
 
   it("keeps list items lightweight and identities unambiguous", () => {

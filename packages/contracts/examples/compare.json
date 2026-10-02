@@ -1,0 +1,450 @@
+{
+  "correspondence": {
+    "method": "Same dataset role (passer, targeted receiver). Not an assignment.",
+    "pairs": [
+      {
+        "basis": "Passer",
+        "left_player_id": "1003",
+        "right_player_id": "1004"
+      },
+      {
+        "basis": "Targeted Receiver",
+        "left_player_id": "1004",
+        "right_player_id": "1005"
+      }
+    ]
+  },
+  "dataset_version": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+  "descriptor_version": "structural-v1",
+  "evidence": [
+    {
+      "decimals": 0,
+      "definition": "Down before the snap, as supplied.",
+      "delta": 0.0,
+      "frame_reference": null,
+      "id": "comparison.metadata.down",
+      "kind": "metadata",
+      "label": "Down",
+      "left_text": null,
+      "left_value": 2.0,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": null,
+      "right_value": 2.0,
+      "source": "pre_snap_context",
+      "unit": null
+    },
+    {
+      "decimals": 0,
+      "definition": "Yards to a first down before the snap, as supplied.",
+      "delta": 0.0,
+      "frame_reference": null,
+      "id": "comparison.metadata.yards_to_go",
+      "kind": "metadata",
+      "label": "Yards to go",
+      "left_text": null,
+      "left_value": 6.0,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": null,
+      "right_value": 6.0,
+      "source": "pre_snap_context",
+      "unit": "yd"
+    },
+    {
+      "decimals": 0,
+      "definition": "Quarter as supplied; 5 is overtime.",
+      "delta": 0.0,
+      "frame_reference": null,
+      "id": "comparison.metadata.quarter",
+      "kind": "metadata",
+      "label": "Quarter",
+      "left_text": null,
+      "left_value": 1.0,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": null,
+      "right_value": 1.0,
+      "source": "pre_snap_context",
+      "unit": null
+    },
+    {
+      "decimals": 1,
+      "definition": "Yards from the offense's own goal line to the line of scrimmage.",
+      "delta": 5.0,
+      "frame_reference": null,
+      "id": "comparison.metadata.field_position",
+      "kind": "metadata",
+      "label": "Line of scrimmage, from own goal",
+      "left_text": null,
+      "left_value": 25.0,
+      "missing_reason": null,
+      "relation": "different",
+      "right_text": null,
+      "right_value": 30.0,
+      "source": "pre_snap_context",
+      "unit": "yd"
+    },
+    {
+      "decimals": 0,
+      "definition": "Dataset formation label (pre-snap). Not a model input.",
+      "delta": null,
+      "frame_reference": null,
+      "id": "comparison.metadata.offense_formation",
+      "kind": "metadata",
+      "label": "Offensive formation",
+      "left_text": "SHOTGUN",
+      "left_value": null,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": "SHOTGUN",
+      "right_value": null,
+      "source": "pre_snap_context",
+      "unit": null
+    },
+    {
+      "decimals": 0,
+      "definition": "Dataset receiver alignment label, e.g. 3x1 (pre-snap). Not a model input.",
+      "delta": null,
+      "frame_reference": null,
+      "id": "comparison.metadata.receiver_alignment",
+      "kind": "metadata",
+      "label": "Receiver alignment",
+      "left_text": "2x2",
+      "left_value": null,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": "2x2",
+      "right_value": null,
+      "source": "pre_snap_context",
+      "unit": null
+    },
+    {
+      "decimals": 0,
+      "definition": "Charted coverage label, recorded after the play. Not a model input.",
+      "delta": null,
+      "frame_reference": null,
+      "id": "comparison.metadata.coverage_type",
+      "kind": "metadata",
+      "label": "Coverage label",
+      "left_text": "COVER_3_ZONE",
+      "left_value": null,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": "COVER_3_ZONE",
+      "right_value": null,
+      "source": "charted_label",
+      "unit": null
+    },
+    {
+      "decimals": 0,
+      "definition": "Charted route of the targeted receiver, recorded after the play. Not a model input.",
+      "delta": null,
+      "frame_reference": null,
+      "id": "comparison.metadata.target_route",
+      "kind": "metadata",
+      "label": "Targeted receiver route",
+      "left_text": "OUT",
+      "left_value": null,
+      "missing_reason": null,
+      "relation": "same",
+      "right_text": "OUT",
+      "right_value": null,
+      "source": "charted_label",
+      "unit": null
+    },
+    {
+      "decimals": 1,
+      "definition": "max(y) - min(y) over tracked offensive players at the last observed frame: how far apart across the field the passer and route runners are.",
+      "delta": -2.24,
+      "frame_reference": {
+        "anchor": "last_observed_frame",
+        "left_frame_ids": [
+          23
+        ],
+        "right_frame_ids": [
+          9
+        ]
+      },
+      "id": "comparison.structure.offense_width.last_observed_frame",
+      "kind": "structural_metric",
+      "label": "Offensive width",
+      "left_text": null,
+      "left_value": 27.52,
+      "missing_reason": null,
+      "relation": null,
+      "right_text": null,
+      "right_value": 25.28,
+      "source": "tracking",
+      "unit": "yd"
+    },
+    {
+      "decimals": 1,
+      "definition": "max(x) over tracked defenders minus the line of scrimmage at the last observed frame: how far downfield the deepest tracked defender is.",
+      "delta": -3.78,
+      "frame_reference": {
+        "anchor": "last_observed_frame",
+        "left_frame_ids": [
+          23
+        ],
+        "right_frame_ids": [
+          9
+        ]
+      },
+      "id": "comparison.structure.deepest_defender_depth.last_observed_frame",
+      "kind": "structural_metric",
+      "label": "Deepest defender depth",
+      "left_text": null,
+      "left_value": 18.94,
+      "missing_reason": null,
+      "relation": null,
+      "right_text": null,
+      "right_value": 15.16,
+      "source": "tracking",
+      "unit": "yd"
+    },
+    {
+      "decimals": 1,
+      "definition": "Targeted receiver's x minus the line of scrimmage at the last observed frame (negative = behind the line).",
+      "delta": -1.82,
+      "frame_reference": {
+        "anchor": "last_observed_frame",
+        "left_frame_ids": [
+          23
+        ],
+        "right_frame_ids": [
+          9
+        ]
+      },
+      "id": "comparison.structure.target_depth.last_observed_frame",
+      "kind": "structural_metric",
+      "label": "Targeted receiver depth",
+      "left_text": null,
+      "left_value": -1.14,
+      "missing_reason": null,
+      "relation": null,
+      "right_text": null,
+      "right_value": -2.96,
+      "source": "tracking",
+      "unit": "yd"
+    },
+    {
+      "decimals": 1,
+      "definition": "Euclidean distance from the targeted receiver to the nearest tracked defender at the last observed frame.",
+      "delta": 2.884,
+      "frame_reference": {
+        "anchor": "last_observed_frame",
+        "left_frame_ids": [
+          23
+        ],
+        "right_frame_ids": [
+          9
+        ]
+      },
+      "id": "comparison.structure.target_separation.last_observed_frame",
+      "kind": "structural_metric",
+      "label": "Targeted receiver separation",
+      "left_text": null,
+      "left_value": 4.687,
+      "missing_reason": null,
+      "relation": null,
+      "right_text": null,
+      "right_value": 7.571,
+      "source": "tracking",
+      "unit": "yd"
+    },
+    {
+      "decimals": 1,
+      "definition": "Mean tracked speed over every tracked player and frame in the last 20 observed frames (2.0 s at 10 Hz) up to the last observed frame.",
+      "delta": 0.0,
+      "frame_reference": {
+        "anchor": "last_2s_window",
+        "left_frame_ids": [
+          4,
+          23
+        ],
+        "right_frame_ids": [
+          1,
+          9
+        ]
+      },
+      "id": "comparison.structure.mean_speed.last_2s_window",
+      "kind": "structural_metric",
+      "label": "Mean player speed",
+      "left_text": null,
+      "left_value": 1.825,
+      "missing_reason": null,
+      "relation": null,
+      "right_text": null,
+      "right_value": 1.825,
+      "source": "tracking",
+      "unit": "yd/s"
+    }
+  ],
+  "evidence_note": "Evidence lists deterministic observations about both plays: pre-snap context, charted labels, and tracking descriptors. None of them is a model input, and none explains why the learned embedding places the plays close together.",
+  "latency_ms": 1.0,
+  "left": {
+    "first_frame_id": 1,
+    "last_frame_id": 23,
+    "observed_frame_count": 23,
+    "play": {
+      "annotations": {
+        "coverage_family": "ZONE_COVERAGE",
+        "coverage_type": "COVER_3_ZONE",
+        "dropback_distance": 3.5,
+        "dropback_type": "TRADITIONAL",
+        "pass_location_type": "INSIDE_BOX",
+        "play_action": false,
+        "target_route": "OUT"
+      },
+      "away_team": "CCC",
+      "context": {
+        "defenders_in_the_box": 6,
+        "expected_points": 1.25,
+        "home_score": 0,
+        "home_win_probability": 0.55,
+        "offense_formation": "SHOTGUN",
+        "receiver_alignment": "2x2",
+        "visitor_score": 3,
+        "visitor_win_probability": 0.45
+      },
+      "defense": "DDD",
+      "description": "(12:00) Synthetic pass to 101 for 7 yards.",
+      "down": 2,
+      "game_clock": "12:00",
+      "game_date": "2023-09-07",
+      "game_id": 2099090011,
+      "home_team": "DDD",
+      "id": "2099090011-101",
+      "offense": "CCC",
+      "outcome": {
+        "expected_points_added": 0.4,
+        "home_win_probability_added": -0.01,
+        "nullified_by_penalty": false,
+        "pass_length": 5,
+        "pass_result": "C",
+        "penalty_yards": null,
+        "pre_penalty_yards_gained": 7,
+        "visitor_win_probability_added": 0.01,
+        "yards_gained": 7
+      },
+      "play_id": 101,
+      "play_type": "pass",
+      "quarter": 1,
+      "season": 2023,
+      "tracking": {
+        "ball_tracked": false,
+        "defense_player_count": 6,
+        "first_frame_id": 1,
+        "future_duration_s": 0.7,
+        "future_frame_count": 7,
+        "last_frame_id": 23,
+        "observed_duration_s": 2.2,
+        "observed_frame_count": 23,
+        "offense_player_count": 5,
+        "player_count": 11,
+        "predicted_player_count": 3
+      },
+      "week": 1,
+      "yardline_label": "CCC 25",
+      "yards_to_go": 6
+    },
+    "play_id": "2099090011-101",
+    "split": "train",
+    "window_start_frame_id": 4
+  },
+  "request_id": "example",
+  "right": {
+    "first_frame_id": 1,
+    "last_frame_id": 9,
+    "observed_frame_count": 9,
+    "play": {
+      "annotations": {
+        "coverage_family": "ZONE_COVERAGE",
+        "coverage_type": "COVER_3_ZONE",
+        "dropback_distance": 3.5,
+        "dropback_type": "TRADITIONAL",
+        "pass_location_type": "INSIDE_BOX",
+        "play_action": false,
+        "target_route": "OUT"
+      },
+      "away_team": "AAA",
+      "context": {
+        "defenders_in_the_box": 6,
+        "expected_points": 1.25,
+        "home_score": 0,
+        "home_win_probability": 0.55,
+        "offense_formation": "SHOTGUN",
+        "receiver_alignment": "2x2",
+        "visitor_score": 3,
+        "visitor_win_probability": 0.45
+      },
+      "defense": "BBB",
+      "description": "(12:00) Synthetic pass to 900 for 7 yards.",
+      "down": 2,
+      "game_clock": "12:00",
+      "game_date": "2023-09-07",
+      "game_id": 2099090010,
+      "home_team": "BBB",
+      "id": "2099090010-900",
+      "offense": "AAA",
+      "outcome": {
+        "expected_points_added": 0.4,
+        "home_win_probability_added": -0.01,
+        "nullified_by_penalty": false,
+        "pass_length": 5,
+        "pass_result": "C",
+        "penalty_yards": null,
+        "pre_penalty_yards_gained": 7,
+        "visitor_win_probability_added": 0.01,
+        "yards_gained": 7
+      },
+      "play_id": 900,
+      "play_type": "pass",
+      "quarter": 1,
+      "season": 2023,
+      "tracking": {
+        "ball_tracked": false,
+        "defense_player_count": 6,
+        "first_frame_id": 1,
+        "future_duration_s": 0.5,
+        "future_frame_count": 5,
+        "last_frame_id": 9,
+        "observed_duration_s": 0.8,
+        "observed_frame_count": 9,
+        "offense_player_count": 5,
+        "player_count": 11,
+        "predicted_player_count": 3
+      },
+      "week": 1,
+      "yardline_label": "AAA 30",
+      "yards_to_go": 6
+    },
+    "play_id": "2099090010-900",
+    "split": "train",
+    "window_start_frame_id": 1
+  },
+  "similarity": {
+    "cosine_distance": 0.0357,
+    "cosine_reference": {
+      "description": "Cosine similarity in this embedding space: 200,000 random play pairs (median 0.161) and each play's single nearest neighbour (median 0.930). Scores are relative to this space, not probabilities.",
+      "nearest_neighbor_p05": 0.8435,
+      "nearest_neighbor_p50": 0.9305,
+      "nearest_neighbor_p95": 0.9807,
+      "random_pair_mean": 0.1651,
+      "random_pair_p50": 0.1607,
+      "random_pair_p95": 0.9542
+    },
+    "cosine_similarity": 0.9643,
+    "dataset_version": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+    "left_rank_from_right": 2,
+    "model_version": "trajectory-test-v1",
+    "rank_pool": 12,
+    "representation": "learned_embedding",
+    "right_rank_from_left": 1,
+    "split_version": "synthetic-weeks-v1-1d504e6a0cdc"
+  },
+  "similarity_unavailable_code": null,
+  "similarity_unavailable_reason": null,
+  "warnings": []
+}

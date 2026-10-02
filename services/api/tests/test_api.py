@@ -243,9 +243,14 @@ def test_model_registry_is_empty_without_artifacts(client: TestClient) -> None:
 
 
 def test_no_fake_ml_endpoints(client: TestClient) -> None:
-    for path in ("/api/v1/search/similar", "/api/v1/playlab/counterfactual"):
-        assert client.post(path, json={}).status_code in (404, 405)
+    assert client.post("/api/v1/playlab/counterfactual", json={}).status_code in (
+        404,
+        405,
+    )
     assert client.get("/api/v1/plays/1-1/embedding").status_code == 404
+    # Similarity exists but, with no retrieval store, refuses instead of inventing.
+    r = client.post("/api/v1/search/similar", json={"play_id": "2099090010-101"})
+    assert r.status_code == 503 and r.json()["error"]["code"] == "retrieval_unavailable"
 
 
 def test_cors_and_request_id_headers(client: TestClient) -> None:
@@ -268,6 +273,8 @@ def test_openapi_documents_every_route(client: TestClient) -> None:
         "/api/v1/plays/{play_id}/future",
         "/api/v1/models",
         "/api/v1/dataset",
+        "/api/v1/search/similar",
+        "/api/v1/compare",
     } <= set(spec["paths"])
     assert "ErrorEnvelope" in spec["components"]["schemas"]
 

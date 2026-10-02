@@ -27,6 +27,26 @@ jobs:
 
   python:
     runs-on: ubuntu-latest
+    services:
+      # Same pgvector image as docker-compose.yml. Integration tests run against
+      # it with tiny deterministic vectors; full benchmarks stay local.
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg18-trixie
+        env:
+          POSTGRES_USER: playlens_dev
+          POSTGRES_PASSWORD: playlens_dev
+          POSTGRES_DB: playlens
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U playlens_dev -d playlens"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      PLAYLENS_TEST_DATABASE_URL: postgresql://playlens_dev:playlens_dev@localhost:5432/playlens
+      # Fail, rather than skip, the pgvector integration tests if the service is missing.
+      PLAYLENS_REQUIRE_DB_TESTS: "1"
     steps:
       - uses: actions/checkout@v4
       - name: Install uv
@@ -39,6 +59,7 @@ jobs:
           python-version: "3.12"
       - run: uv sync
       - run: uv run ruff check .
+      - run: uv run ruff format --check .
       - run: uv run mypy services/api ml
       # Tests use synthetic data; the real-data regression tests skip without the licensed files.
       - run: uv run pytest

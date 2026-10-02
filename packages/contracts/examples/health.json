@@ -10,6 +10,21 @@
     "errors": {},
     "loaded": []
   },
+  "retrieval": {
+    "backend": null,
+    "database_reachable": null,
+    "dataset_version": null,
+    "embedding_count": null,
+    "hnsw_index": null,
+    "model_version": "trajectory-gnn-transformer-v1",
+    "pending_migrations": [],
+    "pgvector_version": null,
+    "reason": "Retrieval is disabled: PLAYLENS_DATABASE_URL is empty.",
+    "schema_version": null,
+    "server_version": null,
+    "split_version": null,
+    "status": "disabled"
+  },
   "service": "playlens-api",
   "status": "ok",
   "version": "0.2.0"

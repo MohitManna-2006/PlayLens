@@ -5,7 +5,9 @@
  * See docs/decisions/ADR-0001-web-fixture-data-source.md and ADR-0002.
  */
 import type {
-  CompareResult,
+  ComparePlay,
+  CompareRequest,
+  CompareResponse,
   CounterfactualRequest,
   CounterfactualResult,
   DatasetStatus,
@@ -14,9 +16,12 @@ import type {
   FramesPayload,
   PlayDetail,
   PlayPage,
+  Evidence,
   PlayQuery,
-  SimilarRequest,
-  SimilarResult,
+  PlaySummary,
+  SimilarityFilters,
+  SimilarityRequest,
+  SimilaritySearchResponse,
   TrajectoryPrediction,
   TrajectoryRequest,
 } from "@/lib/contracts";
@@ -53,6 +58,20 @@ const DATASET: DatasetStatus = {
   synthetic: true,
   license_note: "Synthetic plays generated in the browser. Not NFL data.",
   generated_at: null,
+};
+const EMPTY_FILTERS: SimilarityFilters = {
+  down: null,
+  yards_to_go_min: null,
+  yards_to_go_max: null,
+  quarter: null,
+  week_min: null,
+  week_max: null,
+  offense: null,
+  defense: null,
+  offense_formation: null,
+  field_position_min: null,
+  field_position_max: null,
+  splits: null,
 };
 const COORDINATES = "Canonical yards: x 0–120 including end zones, y 0–53.3, offense attacks +x; angles NGS (0° = +y, clockwise)";
 
@@ -307,50 +326,171 @@ export class FixtureSource implements RawSource {
     return fixtureModels(this.descriptorIndex().size);
   }
 
-  async findSimilar(req: SimilarRequest, signal?: AbortSignal): Promise<SimilarResult> {
+  /**
+   * Fixture similarity: the handcrafted formation descriptor (a baseline, not a
+   * learned embedding) with exact cosine search over synthetic plays. Responses
+   * say so (`representation: "baseline_descriptor"`, `backend: "memory"`).
+   */
+  async findSimilar(req: SimilarityRequest, signal?: AbortSignal): Promise<SimilaritySearchResponse> {
     checkAbort(signal);
     const t0 = performance.now();
     const index = this.descriptorIndex();
     const src = index.get(req.play_id);
-    if (!src) throw new ApiError("This play has no snap event, so the formation descriptor is undefined and retrieval cannot run.", 422, "user");
-    const ranked = [...index.entries()]
-      .filter(([id]) => id !== req.play_id)
+    const query = this.play(req.play_id).summary;
+    if (!src) throw new ApiError("This play has no snap event, so the formation descriptor is undefined and retrieval cannot run.", 404, "user", "embedding_unavailable");
+    const f = { ...EMPTY_FILTERS, ...req.filters };
+    const keep = (s: PlaySummary) =>
+      (f.down === null || s.down === f.down) &&
+      (f.yards_to_go_min === null || (s.yards_to_go ?? -1) >= f.yards_to_go_min) &&
+      (f.yards_to_go_max === null || (s.yards_to_go ?? 1e9) <= f.yards_to_go_max) &&
+      (f.quarter === null || s.quarter === f.quarter) &&
+      (f.week_min === null || (s.week ?? -1) >= f.week_min) &&
+      (f.week_max === null || (s.week ?? 1e9) <= f.week_max) &&
+      (f.offense === null || s.offense === f.offense) &&
+      (f.defense === null || s.defense === f.defense) &&
+      (f.offense_formation === null || s.context.offense_formation === f.offense_formation) &&
+      f.splits === null; // fixture plays have no temporal split
+    const eligible = [...index.entries()].filter(([id]) => id !== req.play_id && keep(this.play(id).summary));
+    const ranked = eligible
       .map(([id, v]) => ({ id, score: cosineSimilarity(src, v) }))
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id))
       .slice(0, req.k);
+    const ms = performance.now() - t0;
     return {
       request_id: nextRequestId("fx-sim"),
-      source_play_id: req.play_id,
-      model_version: DESCRIPTOR_MODEL,
-      model_kind: "baseline",
-      scope: {
-        description: `Fixture corpus · ${index.size} of ${DATASET.play_count} plays indexed · exact search`,
+      query: { play_id: req.play_id, split: "unknown", model_version: DESCRIPTOR_MODEL, k: req.k, mode: "exact", filters: f },
+      results: ranked.map((r, i) => {
+        const other = this.play(r.id).summary;
+        return {
+          rank: i + 1,
+          play_id: r.id,
+          cosine_distance: 1 - r.score,
+          cosine_similarity: r.score,
+          split: "unknown",
+          play: other,
+          evidence: this.evidence(r.id, req.play_id, r.id, query, other),
+        };
+      }),
+      retrieval: {
+        mode: req.mode ?? "approximate",
+        plan: "exact_scan",
+        metric: "cosine",
+        representation: "baseline_descriptor",
+        backend: "memory",
+        model_version: DESCRIPTOR_MODEL,
+        dataset_version: DATASET.dataset_version!,
+        split_version: "none (synthetic fixture)",
+        embedding_dimension: src.length,
+        normalization: "L2-normalised",
         corpus_size: index.size,
-        index: "exact",
+        candidates: eligible.length,
         self_match_excluded: true,
+        hnsw: null,
+        cosine_reference: null,
+        latency_ms: ms,
+        database_ms: ms,
+        search_ms: ms,
       },
-      results: ranked.map((r, i) => ({ rank: i + 1, score: r.score, play: this.play(r.id).summary })),
-      latency_ms: performance.now() - t0,
+      warnings: eligible.length < req.k ? [`Only ${eligible.length} plays match these filters.`] : [],
+      evidence_note: "Synthetic fixture: a handcrafted descriptor baseline, not a learned embedding.",
     };
   }
 
-  async compare(left: string, right: string, signal?: AbortSignal): Promise<CompareResult> {
+  private evidence(scope: string, leftId: string, rightId: string, l: PlaySummary, r: PlaySummary): Evidence[] {
+    const meta = (key: string, label: string, a: number | null, b: number | null, unit: string | null): Evidence => ({
+      id: `${scope}.metadata.${key}`,
+      kind: "metadata",
+      source: "pre_snap_context",
+      label,
+      left_value: a,
+      right_value: b,
+      left_text: null,
+      right_text: null,
+      unit,
+      decimals: 0,
+      delta: a !== null && b !== null ? b - a : null,
+      relation: a === null || b === null ? "unavailable" : a === b ? "same" : "different",
+      definition: `${label} as generated by the fixture.`,
+      missing_reason: a === null || b === null ? "Not generated for one or both plays." : null,
+      frame_reference: null,
+    });
+    const structural = compareMeasures(this.series(leftId), this.series(rightId)).map(
+      (m): Evidence => ({
+        id: `${scope}.structure.${m.key}`,
+        kind: "structural_metric",
+        source: "tracking",
+        label: m.label,
+        left_value: m.left,
+        right_value: m.right,
+        left_text: null,
+        right_text: null,
+        unit: m.unit,
+        decimals: m.decimals,
+        delta: m.left !== null && m.right !== null ? m.right - m.left : null,
+        relation: null,
+        definition: m.definition,
+        missing_reason: m.missing_reason,
+        frame_reference: null,
+      }),
+    );
+    return [
+      meta("down", "Down", l.down, r.down, null),
+      meta("yards_to_go", "Yards to go", l.yards_to_go, r.yards_to_go, "yd"),
+      meta("quarter", "Quarter", l.quarter, r.quarter, null),
+      ...structural,
+    ];
+  }
+
+  async compare(req: CompareRequest, signal?: AbortSignal): Promise<CompareResponse> {
     checkAbort(signal);
+    const t0 = performance.now();
+    const { left_play_id: left, right_play_id: right } = req;
+    if (left === right) throw new ApiError("Choose two different plays to compare.", 422, "user", "invalid_comparison");
     const l = this.series(left);
     const r = this.series(right);
     const index = this.descriptorIndex();
     const a = index.get(left);
     const b = index.get(right);
+    const rank = (q: Float64Array, qid: string, d: number) =>
+      1 + [...index.entries()].filter(([id, v]) => id !== qid && 1 - cosineSimilarity(q, v) < d).length;
+    const side = (id: string, s: TrackingSeries): ComparePlay => ({
+      play_id: id,
+      play: this.play(id).summary,
+      split: "unknown",
+      observed_frame_count: s.frameIds.length,
+      first_frame_id: s.frameIds[0],
+      last_frame_id: s.frameIds[s.frameIds.length - 1],
+      window_start_frame_id: null,
+    });
+    const score = a && b ? cosineSimilarity(a, b) : null;
     return {
       request_id: nextRequestId("fx-cmp"),
-      left_play_id: left,
-      right_play_id: right,
-      similarity: a && b ? { score: cosineSimilarity(a, b), model_version: DESCRIPTOR_MODEL, model_kind: "baseline" } : null,
+      left: side(left, l),
+      right: side(right, r),
+      similarity:
+        a && b && score !== null
+          ? {
+              representation: "baseline_descriptor",
+              model_version: DESCRIPTOR_MODEL,
+              dataset_version: DATASET.dataset_version!,
+              split_version: "none (synthetic fixture)",
+              cosine_similarity: score,
+              cosine_distance: 1 - score,
+              right_rank_from_left: rank(a, left, 1 - score),
+              left_rank_from_right: rank(b, right, 1 - score),
+              rank_pool: index.size - 1,
+              cosine_reference: null,
+            }
+          : null,
       similarity_unavailable_reason: a && b ? null : "One or both plays have no snap event, so the formation descriptor is undefined.",
-      window: "Snap to +3.0 s, snap-relative",
-      measures: compareMeasures(l, r),
+      similarity_unavailable_code: a && b ? null : "embedding_unavailable",
+      evidence: this.evidence("comparison", left, right, this.play(left).summary, this.play(right).summary),
       correspondence: snapCorrespondence(l, r),
-      source: "Computed in the browser from fixture tracking frames",
+      descriptor_version: "fixture-snap-window",
+      dataset_version: DATASET.dataset_version!,
+      latency_ms: performance.now() - t0,
+      warnings: [],
+      evidence_note: "Synthetic fixture: measures computed in the browser from fixture tracking frames.",
     };
   }
 

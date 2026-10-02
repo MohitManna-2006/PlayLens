@@ -184,6 +184,9 @@ class PlayService:
             ),
         }
 
+    def summary(self, r: PlayRecord) -> PlaySummary:
+        return PlaySummary(**self._summary_fields(r))
+
     def list_plays(
         self,
         flt: PlayFilter,
@@ -194,8 +197,8 @@ class PlayService:
     ) -> PlayPage:
         if sort == "similarity" or similar_to:
             raise CapabilityUnavailable(
-                "Similarity sort needs a served retrieval model, and none is served "
-                "yet. Use sort=recent."
+                "The play list does not sort by similarity. Ranked neighbours come "
+                "from POST /api/v1/search/similar. Use sort=recent."
             )
         if page < 1 or not 1 <= page_size <= 200:
             raise InvalidQuery("page must be >= 1 and page_size between 1 and 200.")

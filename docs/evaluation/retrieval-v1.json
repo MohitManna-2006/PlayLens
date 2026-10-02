@@ -1,0 +1,2999 @@
+{
+  "report": "retrieval-v1",
+  "generated_at": "2026-10-01T20:43:58+00:00",
+  "model_version": "trajectory-gnn-transformer-v1",
+  "dataset_version": "nfl_bdb_2026_analytics@full-91dc5311e8c7",
+  "split_version": "temporal-weeks-v1-b39c53db8a01",
+  "embedding_artifact_sha256": "c54181e8342cbe46b608fd70ad9ea2e1edeb7e6fd027d9882e71c0952107ca97",
+  "corpus": {
+    "plays": 14108,
+    "dimension": 128,
+    "by_split": {
+      "train": 10862,
+      "validation": 1687,
+      "test": 1559
+    },
+    "retrieval_corpus": "every stored play of the model version (all splits); the query play is excluded"
+  },
+  "database": {
+    "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "pgvector_version": "0.8.7",
+    "schema_version": "0002",
+    "index": {
+      "name": "play_embeddings_embedding_hnsw",
+      "method": "hnsw",
+      "m": 16,
+      "ef_construction": 64
+    },
+    "max_scan_tuples": 20000,
+    "iterative_scan": "relaxed_order"
+  },
+  "environment": {
+    "host": {
+      "platform": "macOS-26.6-arm64-arm-64bit",
+      "machine": "arm64",
+      "cpu": "Apple M1 Pro",
+      "logical_cpus": 8,
+      "python": "3.12.1",
+      "load_average_1m_at_start": 23.07
+    },
+    "database_vm": {
+      "docker_cpus": 2,
+      "docker_memory_gib": 3.81,
+      "docker_arch": "aarch64",
+      "docker_os": "Ubuntu 24.04.4 LTS"
+    },
+    "postgres": {
+      "shared_buffers": "128MB",
+      "work_mem": "4MB",
+      "maintenance_work_mem": "64MB",
+      "max_parallel_workers_per_gather": "2"
+    },
+    "git": {
+      "commit": "4b3542b52dee6cc2ea47558c9dd979b6cb2bac82",
+      "dirty": true
+    },
+    "client": "Python psycopg 3 on the host, TCP to the container port (localhost); latency includes that round trip."
+  },
+  "method": {
+    "ground_truth": "exact search (sequential scan, ORDER BY cosine distance, play_id), verified against NumPy",
+    "queries": 600,
+    "query_sample": "200 plays per split with the smallest sha256('retrieval-benchmark-v1:<play_id>')",
+    "recall_at_k": "|exact top-k \u2229 approximate top-k| / |exact top-k|, averaged over queries",
+    "ks": [
+      5,
+      10,
+      20
+    ],
+    "ef_search_grid": [
+      10,
+      20,
+      40,
+      64,
+      100,
+      200
+    ],
+    "effective_ef_search": "max(ef_search, k): the store raises ef_search to k so the index can return k rows",
+    "latency": "warm cache; search_statement = the nearest-neighbour SQL statement round trip; store_call = the whole read-only transaction (embedding-set and query lookups, candidate count when filtered, EXPLAIN for approximate, the search)",
+    "ef_selection_rule": "keep pgvector's default (40) if its unfiltered mean recall@10 >= 0.99; otherwise the smallest grid value that meets it"
+  },
+  "verification": {
+    "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "pgvector_version": "0.8.7",
+    "schema_version": "0002",
+    "index": {
+      "name": "play_embeddings_embedding_hnsw",
+      "method": "hnsw",
+      "m": 16,
+      "ef_construction": 64
+    },
+    "provenance_matches_manifest": true,
+    "rows_in_database": 14108,
+    "rows_in_export": 14108,
+    "vector_max_abs_difference": 0.0,
+    "exact_vs_numpy": {
+      "k": 10,
+      "query_plays": 120,
+      "per_split": 40,
+      "sample_rule": "smallest sha256('retrieval-verify-v1:<play_id>') per split",
+      "scenarios": {
+        "none": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.0777440223884724e-07
+        },
+        "same_down": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.082643332235179e-07
+        },
+        "distance_range": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.082643332235179e-07
+        },
+        "same_quarter": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.0761515828748855e-07
+        },
+        "weeks_1_4": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.0826543112306695e-07
+        },
+        "same_offense_and_down": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.7936606405987163e-07
+        },
+        "multi": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.082643332235179e-07
+        },
+        "held_out_only": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 2.380157545500694e-07
+        },
+        "no_match": {
+          "queries": 120,
+          "identical": 120,
+          "equivalent": 120,
+          "max_err": 0.0
+        }
+      }
+    }
+  },
+  "exact": {
+    "k": 10,
+    "queries": 600,
+    "search_statement_ms": {
+      "n": 600,
+      "mean": 4.675,
+      "p50": 4.574,
+      "p95": 5.205,
+      "p99": 6.396,
+      "min": 4.137,
+      "max": 11.408
+    },
+    "store_call_ms": {
+      "n": 600,
+      "mean": 8.205,
+      "p50": 8.006,
+      "p95": 9.506,
+      "p99": 12.853,
+      "min": 6.501,
+      "max": 18.58
+    }
+  },
+  "approximate_sweep": [
+    {
+      "ef_search": 10,
+      "effective_ef_search": 10,
+      "k": 5,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.17,
+        "p50": 1.077,
+        "p95": 1.596,
+        "p99": 2.967,
+        "min": 0.738,
+        "max": 12.134
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 7.083,
+        "p50": 6.414,
+        "p95": 9.918,
+        "p99": 18.871,
+        "min": 4.531,
+        "max": 75.424
+      }
+    },
+    {
+      "ef_search": 10,
+      "effective_ef_search": 10,
+      "k": 10,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.223,
+        "p50": 1.159,
+        "p95": 1.721,
+        "p99": 2.28,
+        "min": 0.803,
+        "max": 3.785
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.917,
+        "p50": 6.638,
+        "p95": 9.181,
+        "p99": 11.621,
+        "min": 4.705,
+        "max": 28.568
+      }
+    },
+    {
+      "ef_search": 10,
+      "effective_ef_search": 20,
+      "k": 20,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.192,
+        "p50": 1.134,
+        "p95": 1.561,
+        "p99": 1.952,
+        "min": 0.881,
+        "max": 4.257
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.351,
+        "p50": 6.155,
+        "p95": 7.853,
+        "p99": 10.171,
+        "min": 4.78,
+        "max": 11.732
+      }
+    },
+    {
+      "ef_search": 20,
+      "effective_ef_search": 20,
+      "k": 5,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.16,
+        "p50": 1.06,
+        "p95": 1.476,
+        "p99": 3.033,
+        "min": 0.723,
+        "max": 12.656
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.496,
+        "p50": 6.11,
+        "p95": 8.288,
+        "p99": 12.216,
+        "min": 4.296,
+        "max": 61.691
+      }
+    },
+    {
+      "ef_search": 20,
+      "effective_ef_search": 20,
+      "k": 10,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.073,
+        "p50": 1.03,
+        "p95": 1.394,
+        "p99": 2.022,
+        "min": 0.808,
+        "max": 5.693
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.143,
+        "p50": 5.923,
+        "p95": 7.343,
+        "p99": 9.346,
+        "min": 4.675,
+        "max": 20.498
+      }
+    },
+    {
+      "ef_search": 20,
+      "effective_ef_search": 20,
+      "k": 20,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.219,
+        "p50": 1.181,
+        "p95": 1.513,
+        "p99": 1.759,
+        "min": 0.865,
+        "max": 4.023
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.489,
+        "p50": 6.348,
+        "p95": 7.733,
+        "p99": 9.135,
+        "min": 4.734,
+        "max": 14.96
+      }
+    },
+    {
+      "ef_search": 40,
+      "effective_ef_search": 40,
+      "k": 5,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.802,
+        "p50": 1.297,
+        "p95": 2.5,
+        "p99": 7.575,
+        "min": 0.876,
+        "max": 120.402
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 9.111,
+        "p50": 6.893,
+        "p95": 14.376,
+        "p99": 48.02,
+        "min": 4.469,
+        "max": 291.481
+      }
+    },
+    {
+      "ef_search": 40,
+      "effective_ef_search": 40,
+      "k": 10,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.555,
+        "p50": 1.205,
+        "p95": 2.612,
+        "p99": 5.962,
+        "min": 0.867,
+        "max": 67.893
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 7.97,
+        "p50": 6.5,
+        "p95": 13.507,
+        "p99": 32.122,
+        "min": 4.934,
+        "max": 95.832
+      }
+    },
+    {
+      "ef_search": 40,
+      "effective_ef_search": 40,
+      "k": 20,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.574,
+        "p50": 1.266,
+        "p95": 3.005,
+        "p99": 7.452,
+        "min": 0.925,
+        "max": 22.136
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 9.28,
+        "p50": 6.679,
+        "p95": 19.325,
+        "p99": 57.326,
+        "min": 4.421,
+        "max": 170.554
+      }
+    },
+    {
+      "ef_search": 64,
+      "effective_ef_search": 64,
+      "k": 5,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.254,
+        "p50": 1.214,
+        "p95": 1.621,
+        "p99": 2.192,
+        "min": 0.932,
+        "max": 3.394
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.467,
+        "p50": 6.249,
+        "p95": 7.909,
+        "p99": 10.005,
+        "min": 4.856,
+        "max": 24.107
+      }
+    },
+    {
+      "ef_search": 64,
+      "effective_ef_search": 64,
+      "k": 10,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.648,
+        "p50": 1.419,
+        "p95": 2.807,
+        "p99": 6.796,
+        "min": 0.954,
+        "max": 22.095
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 8.554,
+        "p50": 7.198,
+        "p95": 13.682,
+        "p99": 44.978,
+        "min": 4.834,
+        "max": 128.335
+      }
+    },
+    {
+      "ef_search": 64,
+      "effective_ef_search": 64,
+      "k": 20,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.351,
+        "p50": 1.316,
+        "p95": 1.702,
+        "p99": 1.964,
+        "min": 0.961,
+        "max": 2.979
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.849,
+        "p50": 6.72,
+        "p95": 8.443,
+        "p99": 10.24,
+        "min": 5.283,
+        "max": 11.46
+      }
+    },
+    {
+      "ef_search": 100,
+      "effective_ef_search": 100,
+      "k": 5,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.493,
+        "p50": 1.44,
+        "p95": 1.882,
+        "p99": 2.385,
+        "min": 1.012,
+        "max": 12.227
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 7.229,
+        "p50": 6.9,
+        "p95": 8.668,
+        "p99": 13.55,
+        "min": 5.629,
+        "max": 33.936
+      }
+    },
+    {
+      "ef_search": 100,
+      "effective_ef_search": 100,
+      "k": 10,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.507,
+        "p50": 1.445,
+        "p95": 1.957,
+        "p99": 2.545,
+        "min": 0.992,
+        "max": 10.361
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 7.34,
+        "p50": 6.994,
+        "p95": 9.167,
+        "p99": 15.762,
+        "min": 5.246,
+        "max": 43.033
+      }
+    },
+    {
+      "ef_search": 100,
+      "effective_ef_search": 100,
+      "k": 20,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.427,
+        "p50": 1.276,
+        "p95": 1.849,
+        "p99": 3.941,
+        "min": 0.957,
+        "max": 15.585
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.831,
+        "p50": 6.185,
+        "p95": 9.364,
+        "p99": 14.547,
+        "min": 5.021,
+        "max": 56.955
+      }
+    },
+    {
+      "ef_search": 200,
+      "effective_ef_search": 200,
+      "k": 5,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.57,
+        "p50": 1.524,
+        "p95": 1.993,
+        "p99": 2.431,
+        "min": 1.124,
+        "max": 4.818
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 6.726,
+        "p50": 6.563,
+        "p95": 8.188,
+        "p99": 9.144,
+        "min": 4.83,
+        "max": 17.835
+      }
+    },
+    {
+      "ef_search": 200,
+      "effective_ef_search": 200,
+      "k": 10,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.94,
+        "p50": 1.681,
+        "p95": 2.636,
+        "p99": 9.188,
+        "min": 1.163,
+        "max": 20.11
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 8.528,
+        "p50": 7.062,
+        "p95": 12.15,
+        "p99": 43.834,
+        "min": 5.548,
+        "max": 152.082
+      }
+    },
+    {
+      "ef_search": 200,
+      "effective_ef_search": 200,
+      "k": 20,
+      "queries": 600,
+      "recall_mean": 1.0,
+      "recall_min": 1.0,
+      "queries_with_full_recall": 600,
+      "hnsw_plan_share": 1.0,
+      "search_statement_ms": {
+        "n": 600,
+        "mean": 1.68,
+        "p50": 1.57,
+        "p95": 2.219,
+        "p99": 3.697,
+        "min": 1.039,
+        "max": 11.661
+      },
+      "store_call_ms": {
+        "n": 600,
+        "mean": 7.086,
+        "p50": 6.641,
+        "p95": 9.497,
+        "p99": 14.935,
+        "min": 4.839,
+        "max": 41.302
+      }
+    }
+  ],
+  "chosen_ef_search": 40,
+  "iterative_scan_off_probe": [
+    {
+      "k": 10,
+      "ef_search": 5,
+      "queries": 200,
+      "recall_mean": 0.4,
+      "queries_returning_fewer_than_k": 200
+    },
+    {
+      "k": 10,
+      "ef_search": 10,
+      "queries": 200,
+      "recall_mean": 0.9,
+      "queries_returning_fewer_than_k": 200
+    },
+    {
+      "k": 10,
+      "ef_search": 20,
+      "queries": 200,
+      "recall_mean": 1.0,
+      "queries_returning_fewer_than_k": 0
+    },
+    {
+      "k": 20,
+      "ef_search": 20,
+      "queries": 200,
+      "recall_mean": 0.95,
+      "queries_returning_fewer_than_k": 200
+    }
+  ],
+  "chosen_summary": {
+    "recall_at_10": 1.0,
+    "search_statement_ms": {
+      "n": 600,
+      "mean": 1.555,
+      "p50": 1.205,
+      "p95": 2.612,
+      "p99": 5.962,
+      "min": 0.867,
+      "max": 67.893
+    },
+    "store_call_ms": {
+      "n": 600,
+      "mean": 7.97,
+      "p50": 6.5,
+      "p95": 13.507,
+      "p99": 32.122,
+      "min": 4.934,
+      "max": 95.832
+    }
+  },
+  "filtered": {
+    "queries_per_scenario": 150,
+    "query_sample": "50 plays per split, salt 'retrieval-benchmark-v1-filtered'; filters derived from each query play's own context",
+    "k": 10,
+    "scenarios": {
+      "none": {
+        "filters_example": {},
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 14107.0,
+          "p50": 14107.0,
+          "p95": 14107.0,
+          "p99": 14107.0,
+          "min": 14107.0,
+          "max": 14107.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 4.654,
+            "p50": 4.583,
+            "p95": 5.162,
+            "p99": 5.365,
+            "min": 4.108,
+            "max": 5.48
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 8.258,
+            "p50": 8.125,
+            "p95": 9.735,
+            "p99": 10.299,
+            "min": 6.261,
+            "max": 11.362
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.153,
+              "p50": 1.101,
+              "p95": 1.497,
+              "p99": 1.725,
+              "min": 0.855,
+              "max": 4.005
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 6.431,
+              "p50": 6.289,
+              "p95": 7.797,
+              "p99": 9.316,
+              "min": 4.878,
+              "max": 9.927
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.137,
+              "p50": 1.085,
+              "p95": 1.522,
+              "p99": 1.755,
+              "min": 0.818,
+              "max": 2.018
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 6.351,
+              "p50": 6.234,
+              "p95": 7.724,
+              "p99": 10.088,
+              "min": 4.274,
+              "max": 14.151
+            }
+          }
+        }
+      },
+      "same_down": {
+        "filters_example": {
+          "down": 1
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 4467.573,
+          "p50": 4694.0,
+          "p95": 5162.0,
+          "p99": 5162.0,
+          "min": 369.0,
+          "max": 5162.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 3.873,
+            "p50": 3.57,
+            "p95": 4.241,
+            "p99": 14.689,
+            "min": 2.958,
+            "max": 23.946
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.73,
+            "p50": 11.282,
+            "p95": 13.335,
+            "p99": 30.113,
+            "min": 8.84,
+            "max": 37.446
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.283,
+              "p50": 1.21,
+              "p95": 1.692,
+              "p99": 2.328,
+              "min": 0.878,
+              "max": 4.601
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 11.217,
+              "p50": 9.998,
+              "p95": 13.499,
+              "p99": 46.421,
+              "min": 8.577,
+              "max": 77.774
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.339,
+              "p50": 1.203,
+              "p95": 1.983,
+              "p99": 4.487,
+              "min": 0.815,
+              "max": 6.446
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 10.879,
+              "p50": 10.47,
+              "p95": 13.14,
+              "p99": 23.496,
+              "min": 7.511,
+              "max": 38.768
+            }
+          }
+        }
+      },
+      "distance_range": {
+        "filters_example": {
+          "yards_to_go_min": 8,
+          "yards_to_go_max": 12
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 5896.467,
+          "p50": 8205.0,
+          "p95": 9071.6,
+          "p99": 9284.0,
+          "min": 57.0,
+          "max": 9284.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 3.799,
+            "p50": 3.747,
+            "p95": 4.544,
+            "p99": 5.787,
+            "min": 2.827,
+            "max": 8.818
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.502,
+            "p50": 11.325,
+            "p95": 13.783,
+            "p99": 17.011,
+            "min": 8.35,
+            "max": 19.179
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.9933,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.357,
+              "p50": 1.206,
+              "p95": 2.216,
+              "p99": 3.059,
+              "min": 0.809,
+              "max": 4.739
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 10.896,
+              "p50": 10.196,
+              "p95": 13.971,
+              "p99": 20.156,
+              "min": 7.3,
+              "max": 42.941
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.9933,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.304,
+              "p50": 1.224,
+              "p95": 1.874,
+              "p99": 2.604,
+              "min": 0.819,
+              "max": 2.907
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 10.774,
+              "p50": 10.602,
+              "p95": 13.255,
+              "p99": 15.298,
+              "min": 7.341,
+              "max": 17.926
+            }
+          }
+        }
+      },
+      "same_quarter": {
+        "filters_example": {
+          "quarter": 4
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 3601.06,
+          "p50": 3912.0,
+          "p95": 4070.0,
+          "p99": 4070.0,
+          "min": 64.0,
+          "max": 4070.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 3.616,
+            "p50": 3.441,
+            "p95": 4.904,
+            "p99": 6.373,
+            "min": 2.726,
+            "max": 9.98
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.633,
+            "p50": 11.076,
+            "p95": 14.947,
+            "p99": 22.396,
+            "min": 8.157,
+            "max": 58.528
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.9933,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.363,
+              "p50": 1.264,
+              "p95": 2.027,
+              "p99": 3.307,
+              "min": 0.861,
+              "max": 3.551
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 11.173,
+              "p50": 10.103,
+              "p95": 14.228,
+              "p99": 37.629,
+              "min": 8.202,
+              "max": 65.906
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.9933,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.372,
+              "p50": 1.228,
+              "p95": 1.845,
+              "p99": 4.783,
+              "min": 0.778,
+              "max": 7.589
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 10.886,
+              "p50": 10.424,
+              "p95": 14.07,
+              "p99": 18.316,
+              "min": 7.191,
+              "max": 22.768
+            }
+          }
+        }
+      },
+      "weeks_1_4": {
+        "filters_example": {
+          "week_min": 1,
+          "week_max": 4
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 3351.92,
+          "p50": 3352.0,
+          "p95": 3352.0,
+          "p99": 3352.0,
+          "min": 3351.0,
+          "max": 3352.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 3.856,
+            "p50": 3.525,
+            "p95": 4.982,
+            "p99": 7.178,
+            "min": 3.086,
+            "max": 11.138
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.391,
+            "p50": 10.863,
+            "p95": 14.909,
+            "p99": 19.554,
+            "min": 8.286,
+            "max": 20.953
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.383,
+              "p50": 1.31,
+              "p95": 1.946,
+              "p99": 2.852,
+              "min": 0.866,
+              "max": 4.091
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 10.899,
+              "p50": 10.114,
+              "p95": 15.911,
+              "p99": 18.805,
+              "min": 7.27,
+              "max": 54.096
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.329,
+              "p50": 1.276,
+              "p95": 1.74,
+              "p99": 2.238,
+              "min": 0.85,
+              "max": 3.453
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 10.885,
+              "p50": 10.439,
+              "p95": 14.335,
+              "p99": 16.944,
+              "min": 7.274,
+              "max": 39.064
+            }
+          }
+        }
+      },
+      "same_offense_and_down": {
+        "filters_example": {
+          "down": 1,
+          "offense": "CHI"
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 137.933,
+          "p50": 145.0,
+          "p95": 173.3,
+          "p99": 190.18,
+          "min": 9.0,
+          "max": 200.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 3.842,
+            "p50": 3.542,
+            "p95": 4.949,
+            "p99": 6.22,
+            "min": 2.923,
+            "max": 26.311
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.712,
+            "p50": 11.155,
+            "p95": 15.003,
+            "p99": 23.969,
+            "min": 8.446,
+            "max": 36.818
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.9667,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 4.528,
+              "p50": 4.208,
+              "p95": 7.316,
+              "p99": 9.355,
+              "min": 1.994,
+              "max": 13.626
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 13.754,
+              "p50": 13.225,
+              "p95": 18.383,
+              "p99": 20.889,
+              "min": 9.975,
+              "max": 23.968
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.9667,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 4.504,
+              "p50": 3.973,
+              "p95": 7.296,
+              "p99": 9.058,
+              "min": 1.876,
+              "max": 46.123
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 14.508,
+              "p50": 13.672,
+              "p95": 18.917,
+              "p99": 22.861,
+              "min": 9.9,
+              "max": 81.425
+            }
+          }
+        }
+      },
+      "multi": {
+        "filters_example": {
+          "down": 1,
+          "yards_to_go_min": 7,
+          "yards_to_go_max": 13,
+          "quarter": 4,
+          "offense_formation": "SHOTGUN"
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 400.713,
+          "p50": 397.5,
+          "p95": 974.0,
+          "p99": 974.0,
+          "min": 1.0,
+          "max": 974.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 4.044,
+            "p50": 3.604,
+            "p95": 5.573,
+            "p99": 8.978,
+            "min": 2.995,
+            "max": 25.517
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 12.408,
+            "p50": 11.654,
+            "p95": 16.841,
+            "p99": 30.752,
+            "min": 8.91,
+            "max": 40.439
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.8333,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 3.185,
+              "p50": 2.543,
+              "p95": 6.629,
+              "p99": 12.109,
+              "min": 1.287,
+              "max": 18.65
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 15.056,
+              "p50": 12.04,
+              "p95": 19.454,
+              "p99": 30.508,
+              "min": 9.164,
+              "max": 371.941
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 0.8333,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 3.034,
+              "p50": 2.459,
+              "p95": 5.731,
+              "p99": 11.857,
+              "min": 1.222,
+              "max": 19.858
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 12.706,
+              "p50": 12.029,
+              "p95": 19.113,
+              "p99": 27.011,
+              "min": 8.924,
+              "max": 29.619
+            }
+          }
+        }
+      },
+      "held_out_only": {
+        "filters_example": {
+          "splits": [
+            "validation",
+            "test"
+          ]
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 3245.333,
+          "p50": 3245.0,
+          "p95": 3246.0,
+          "p99": 3246.0,
+          "min": 3245.0,
+          "max": 3246.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 4.081,
+            "p50": 3.748,
+            "p95": 5.36,
+            "p99": 8.8,
+            "min": 3.281,
+            "max": 15.706
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.738,
+            "p50": 11.217,
+            "p95": 14.715,
+            "p99": 22.242,
+            "min": 9.411,
+            "max": 28.155
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.403,
+              "p50": 1.301,
+              "p95": 1.822,
+              "p99": 3.022,
+              "min": 1.014,
+              "max": 4.682
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 11.259,
+              "p50": 10.405,
+              "p95": 14.035,
+              "p99": 27.104,
+              "min": 8.133,
+              "max": 60.642
+            }
+          },
+          "40": {
+            "recall_at_10_mean": 1.0,
+            "recall_at_10_min": 1.0,
+            "queries_with_matches": 150,
+            "hnsw_plan_share": 1.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 1.308,
+              "p50": 1.268,
+              "p95": 1.714,
+              "p99": 2.169,
+              "min": 0.861,
+              "max": 2.615
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 11.183,
+              "p50": 10.545,
+              "p95": 13.418,
+              "p99": 22.404,
+              "min": 7.5,
+              "max": 73.729
+            }
+          }
+        }
+      },
+      "no_match": {
+        "filters_example": {
+          "down": 4,
+          "quarter": 5,
+          "offense": "ZZZ"
+        },
+        "queries": 150,
+        "candidates": {
+          "n": 150,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "exact": {
+          "statement_ms": {
+            "n": 150,
+            "mean": 3.523,
+            "p50": 3.259,
+            "p95": 4.663,
+            "p99": 5.984,
+            "min": 2.798,
+            "max": 6.672
+          },
+          "store_call_ms": {
+            "n": 150,
+            "mean": 11.233,
+            "p50": 10.715,
+            "p95": 13.738,
+            "p99": 25.208,
+            "min": 8.114,
+            "max": 36.451
+          }
+        },
+        "approximate": {
+          "10": {
+            "recall_at_10_mean": null,
+            "recall_at_10_min": null,
+            "queries_with_matches": 0,
+            "hnsw_plan_share": 0.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 3.724,
+              "p50": 3.513,
+              "p95": 4.93,
+              "p99": 5.703,
+              "min": 2.859,
+              "max": 12.443
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 12.261,
+              "p50": 11.66,
+              "p95": 16.102,
+              "p99": 25.76,
+              "min": 9.286,
+              "max": 30.137
+            }
+          },
+          "40": {
+            "recall_at_10_mean": null,
+            "recall_at_10_min": null,
+            "queries_with_matches": 0,
+            "hnsw_plan_share": 0.0,
+            "fewer_than_available": 0,
+            "statement_ms": {
+              "n": 150,
+              "mean": 3.639,
+              "p50": 3.548,
+              "p95": 4.859,
+              "p99": 5.236,
+              "min": 2.689,
+              "max": 5.969
+            },
+            "store_call_ms": {
+              "n": 150,
+              "mean": 12.083,
+              "p50": 11.759,
+              "p95": 16.147,
+              "p99": 18.983,
+              "min": 8.097,
+              "max": 23.608
+            }
+          }
+        }
+      }
+    }
+  },
+  "ingestion": {
+    "scope": "load() into an empty scratch schema: validation, cosine reference, COPY, upsert with the HNSW index maintained incrementally, ANALYZE",
+    "first_import_s": 14.52,
+    "first_import_rows": {
+      "inserted": 14108,
+      "updated": 0
+    },
+    "rerun_s": 1.83,
+    "rerun_rows": {
+      "inserted": 0,
+      "updated": 0,
+      "unchanged": 14108,
+      "deleted": 0
+    },
+    "hnsw_bulk_build_s": 1.509,
+    "table_bytes": 10510336,
+    "hnsw_index_bytes": 11747328
+  },
+  "endpoints": {
+    "search_approximate_k10": {
+      "requests": 100,
+      "in_process_ms": {
+        "n": 100,
+        "mean": 12.549,
+        "p50": 11.014,
+        "p95": 14.511,
+        "p99": 41.949,
+        "min": 8.513,
+        "max": 122.242
+      },
+      "server_ms": {
+        "n": 100,
+        "mean": 10.228,
+        "p50": 8.685,
+        "p95": 11.633,
+        "p99": 37.206,
+        "min": 6.87,
+        "max": 119.97
+      }
+    },
+    "search_exact_k10": {
+      "requests": 100,
+      "in_process_ms": {
+        "n": 100,
+        "mean": 13.621,
+        "p50": 13.446,
+        "p95": 15.977,
+        "p99": 19.893,
+        "min": 11.002,
+        "max": 25.197
+      },
+      "server_ms": {
+        "n": 100,
+        "mean": 11.279,
+        "p50": 11.045,
+        "p95": 13.054,
+        "p99": 15.805,
+        "min": 9.28,
+        "max": 22.21
+      }
+    },
+    "search_approximate_k10_same_down": {
+      "requests": 100,
+      "in_process_ms": {
+        "n": 100,
+        "mean": 15.338,
+        "p50": 15.119,
+        "p95": 17.828,
+        "p99": 21.885,
+        "min": 12.684,
+        "max": 30.713
+      },
+      "server_ms": {
+        "n": 100,
+        "mean": 13.089,
+        "p50": 12.77,
+        "p95": 15.479,
+        "p99": 19.481,
+        "min": 10.67,
+        "max": 27.49
+      }
+    },
+    "compare": {
+      "requests": 100,
+      "in_process_ms": {
+        "n": 100,
+        "mean": 15.426,
+        "p50": 14.906,
+        "p95": 21.007,
+        "p99": 23.629,
+        "min": 13.007,
+        "max": 30.683
+      },
+      "server_ms": {
+        "n": 100,
+        "mean": 13.286,
+        "p50": 12.935,
+        "p95": 15.866,
+        "p99": 21.204,
+        "min": 11.33,
+        "max": 27.51
+      }
+    },
+    "scope": "FastAPI app in the benchmark process (Starlette TestClient): validation, database transaction, play summaries, evidence, JSON. No network hop between client and API; the database is reached over localhost TCP."
+  },
+  "nearest_neighbour_cosine_in_sample": {
+    "n": 600,
+    "mean": 0.984,
+    "p50": 0.986,
+    "p95": 0.993,
+    "p99": 0.995,
+    "min": 0.927,
+    "max": 0.997
+  },
+  "worst_recall_query_at_chosen_ef": {
+    "play_id": "2023112602-80",
+    "recall_at_10": 1.0
+  },
+  "examples": [
+    {
+      "query_play_id": "2023123113-855",
+      "query_split": "test",
+      "query": {
+        "week": 17,
+        "quarter": 2,
+        "down": 2,
+        "yards_to_go": 9,
+        "formation": "SINGLEBACK"
+      },
+      "neighbours": [
+        {
+          "rank": 1,
+          "play_id": "2023100801-3358",
+          "split": "train",
+          "cosine_similarity": 0.983412,
+          "matchup": "HOU at ATL",
+          "week": 5,
+          "quarter": 4,
+          "down": 3,
+          "yards_to_go": 3,
+          "formation": "I_FORM",
+          "alignment": "2x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "FLAT",
+          "same_metadata": [
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              25.1,
+              20.78
+            ],
+            "deepest_defender_depth": [
+              15.53,
+              16.84
+            ],
+            "target_depth": [
+              -0.7,
+              -0.28
+            ],
+            "target_separation": [
+              6.731,
+              6.963
+            ],
+            "mean_speed": [
+              3.764,
+              3.532
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "play_id": "2023102909-895",
+          "split": "train",
+          "cosine_similarity": 0.981223,
+          "matchup": "CLE at SEA",
+          "week": 8,
+          "quarter": 1,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SINGLEBACK",
+          "alignment": "3x1",
+          "coverage": "COVER_1_MAN",
+          "route": "CROSS",
+          "same_metadata": [
+            "Offensive formation"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              25.1,
+              25.83
+            ],
+            "deepest_defender_depth": [
+              15.53,
+              13.61
+            ],
+            "target_depth": [
+              -0.7,
+              -2.81
+            ],
+            "target_separation": [
+              6.731,
+              6.562
+            ],
+            "mean_speed": [
+              3.764,
+              4.166
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "play_id": "2023121003-2518",
+          "split": "train",
+          "cosine_similarity": 0.980474,
+          "matchup": "IND at CIN",
+          "week": 14,
+          "quarter": 3,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SINGLEBACK",
+          "alignment": "3x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "FLAT",
+          "same_metadata": [
+            "Offensive formation",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              25.1,
+              23.9
+            ],
+            "deepest_defender_depth": [
+              15.53,
+              18.81
+            ],
+            "target_depth": [
+              -0.7,
+              -1.91
+            ],
+            "target_separation": [
+              6.731,
+              6.609
+            ],
+            "mean_speed": [
+              3.764,
+              3.772
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "play_id": "2023101504-310",
+          "split": "train",
+          "cosine_similarity": 0.979518,
+          "matchup": "SF at CLE",
+          "week": 6,
+          "quarter": 1,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SINGLEBACK",
+          "alignment": "3x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "FLAT",
+          "same_metadata": [
+            "Offensive formation",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              25.1,
+              9.82
+            ],
+            "deepest_defender_depth": [
+              15.53,
+              16.1
+            ],
+            "target_depth": [
+              -0.7,
+              -1.48
+            ],
+            "target_separation": [
+              6.731,
+              7.067
+            ],
+            "mean_speed": [
+              3.764,
+              3.005
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "play_id": "2023102905-4697",
+          "split": "train",
+          "cosine_similarity": 0.978771,
+          "matchup": "NYJ at NYG",
+          "week": 8,
+          "quarter": 5,
+          "down": 2,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_1_MAN",
+          "route": "OUT",
+          "same_metadata": [
+            "Down",
+            "Receiver alignment"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              25.1,
+              38.32
+            ],
+            "deepest_defender_depth": [
+              15.53,
+              23.31
+            ],
+            "target_depth": [
+              -0.7,
+              -0.09
+            ],
+            "target_separation": [
+              6.731,
+              1.283
+            ],
+            "mean_speed": [
+              3.764,
+              4.161
+            ]
+          }
+        }
+      ],
+      "plan": "hnsw_index_scan",
+      "selection": "hash-chosen test play (smallest sha256('retrieval-examples-v1:<id>'))"
+    },
+    {
+      "query_play_id": "2023123107-346",
+      "query_split": "test",
+      "query": {
+        "week": 17,
+        "quarter": 1,
+        "down": 3,
+        "yards_to_go": 11,
+        "formation": "SHOTGUN"
+      },
+      "neighbours": [
+        {
+          "rank": 1,
+          "play_id": "2023122409-1554",
+          "split": "validation",
+          "cosine_similarity": 0.988429,
+          "matchup": "ARI at CHI",
+          "week": 16,
+          "quarter": 2,
+          "down": 3,
+          "yards_to_go": 6,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Down",
+            "Offensive formation",
+            "Receiver alignment",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              28.56,
+              23.61
+            ],
+            "deepest_defender_depth": [
+              17.64,
+              19.91
+            ],
+            "target_depth": [
+              3.05,
+              2.63
+            ],
+            "target_separation": [
+              7.565,
+              6.845
+            ],
+            "mean_speed": [
+              2.643,
+              2.42
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "play_id": "2023102205-1845",
+          "split": "train",
+          "cosine_similarity": 0.987849,
+          "matchup": "ATL at TB",
+          "week": 7,
+          "quarter": 2,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "PISTOL",
+          "alignment": "2x1",
+          "coverage": "COVER_6_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              28.56,
+              28.9
+            ],
+            "deepest_defender_depth": [
+              17.64,
+              14.61
+            ],
+            "target_depth": [
+              3.05,
+              3.22
+            ],
+            "target_separation": [
+              7.565,
+              4.238
+            ],
+            "mean_speed": [
+              2.643,
+              2.531
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "play_id": "2023100107-1936",
+          "split": "train",
+          "cosine_similarity": 0.98644,
+          "matchup": "TB at NO",
+          "week": 4,
+          "quarter": 2,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_3_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Offensive formation",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              28.56,
+              38.62
+            ],
+            "deepest_defender_depth": [
+              17.64,
+              17.27
+            ],
+            "target_depth": [
+              3.05,
+              2.05
+            ],
+            "target_separation": [
+              7.565,
+              4.664
+            ],
+            "mean_speed": [
+              2.643,
+              2.372
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "play_id": "2023111908-2774",
+          "split": "train",
+          "cosine_similarity": 0.985572,
+          "matchup": "TB at SF",
+          "week": 11,
+          "quarter": 3,
+          "down": 3,
+          "yards_to_go": 3,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_2_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Down",
+            "Offensive formation",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              28.56,
+              28.72
+            ],
+            "deepest_defender_depth": [
+              17.64,
+              19.01
+            ],
+            "target_depth": [
+              3.05,
+              2.43
+            ],
+            "target_separation": [
+              7.565,
+              3.938
+            ],
+            "mean_speed": [
+              2.643,
+              2.277
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "play_id": "2023101500-2098",
+          "split": "train",
+          "cosine_similarity": 0.985311,
+          "matchup": "BAL at TEN",
+          "week": 6,
+          "quarter": 3,
+          "down": 2,
+          "yards_to_go": 8,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_3_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Offensive formation",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              28.56,
+              24.34
+            ],
+            "deepest_defender_depth": [
+              17.64,
+              15.59
+            ],
+            "target_depth": [
+              3.05,
+              3.54
+            ],
+            "target_separation": [
+              7.565,
+              3.218
+            ],
+            "mean_speed": [
+              2.643,
+              2.461
+            ]
+          }
+        }
+      ],
+      "plan": "hnsw_index_scan",
+      "selection": "hash-chosen test play (smallest sha256('retrieval-examples-v1:<id>'))"
+    },
+    {
+      "query_play_id": "2023123114-3570",
+      "query_split": "test",
+      "query": {
+        "week": 17,
+        "quarter": 4,
+        "down": 2,
+        "yards_to_go": 5,
+        "formation": "SHOTGUN"
+      },
+      "neighbours": [
+        {
+          "rank": 1,
+          "play_id": "2023112610-3946",
+          "split": "train",
+          "cosine_similarity": 0.985878,
+          "matchup": "BAL at LAC",
+          "week": 12,
+          "quarter": 4,
+          "down": 2,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_3_ZONE",
+          "route": "CROSS",
+          "same_metadata": [
+            "Down",
+            "Quarter",
+            "Offensive formation",
+            "Receiver alignment",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              29.27,
+              25.9
+            ],
+            "deepest_defender_depth": [
+              21.13,
+              20.6
+            ],
+            "target_depth": [
+              3.17,
+              1.92
+            ],
+            "target_separation": [
+              6.345,
+              6.395
+            ],
+            "mean_speed": [
+              4.039,
+              4.035
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "play_id": "2023101505-3198",
+          "split": "train",
+          "cosine_similarity": 0.985618,
+          "matchup": "NO at HOU",
+          "week": 6,
+          "quarter": 4,
+          "down": 2,
+          "yards_to_go": 12,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_2_ZONE",
+          "route": "CROSS",
+          "same_metadata": [
+            "Down",
+            "Quarter",
+            "Offensive formation",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              29.27,
+              37.48
+            ],
+            "deepest_defender_depth": [
+              21.13,
+              21.1
+            ],
+            "target_depth": [
+              3.17,
+              2.77
+            ],
+            "target_separation": [
+              6.345,
+              7.538
+            ],
+            "mean_speed": [
+              4.039,
+              4.275
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "play_id": "2023092409-3639",
+          "split": "train",
+          "cosine_similarity": 0.985564,
+          "matchup": "CAR at SEA",
+          "week": 3,
+          "quarter": 3,
+          "down": 3,
+          "yards_to_go": 5,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_1_MAN",
+          "route": "CROSS",
+          "same_metadata": [
+            "Yards to go",
+            "Offensive formation",
+            "Receiver alignment",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              29.27,
+              35.99
+            ],
+            "deepest_defender_depth": [
+              21.13,
+              17.06
+            ],
+            "target_depth": [
+              3.17,
+              1.96
+            ],
+            "target_separation": [
+              6.345,
+              0.868
+            ],
+            "mean_speed": [
+              4.039,
+              3.648
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "play_id": "2023091711-3073",
+          "split": "train",
+          "cosine_similarity": 0.98424,
+          "matchup": "WAS at DEN",
+          "week": 2,
+          "quarter": 3,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "EMPTY",
+          "alignment": "3x2",
+          "coverage": "COVER_4_ZONE",
+          "route": "CROSS",
+          "same_metadata": [
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              29.27,
+              41.53
+            ],
+            "deepest_defender_depth": [
+              21.13,
+              14.69
+            ],
+            "target_depth": [
+              3.17,
+              2.08
+            ],
+            "target_separation": [
+              6.345,
+              6.366
+            ],
+            "mean_speed": [
+              4.039,
+              3.453
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "play_id": "2023110200-108",
+          "split": "train",
+          "cosine_similarity": 0.983929,
+          "matchup": "TEN at PIT",
+          "week": 9,
+          "quarter": 1,
+          "down": 3,
+          "yards_to_go": 6,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_6_ZONE",
+          "route": "CROSS",
+          "same_metadata": [
+            "Offensive formation",
+            "Receiver alignment",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              29.27,
+              28.41
+            ],
+            "deepest_defender_depth": [
+              21.13,
+              16.76
+            ],
+            "target_depth": [
+              3.17,
+              4.07
+            ],
+            "target_separation": [
+              6.345,
+              7.149
+            ],
+            "mean_speed": [
+              4.039,
+              3.833
+            ]
+          }
+        }
+      ],
+      "plan": "hnsw_index_scan",
+      "selection": "hash-chosen test play (smallest sha256('retrieval-examples-v1:<id>'))"
+    },
+    {
+      "query_play_id": "2023123107-2219",
+      "query_split": "test",
+      "query": {
+        "week": 17,
+        "quarter": 3,
+        "down": 2,
+        "yards_to_go": 11,
+        "formation": "SHOTGUN"
+      },
+      "neighbours": [
+        {
+          "rank": 1,
+          "play_id": "2023121006-3394",
+          "split": "train",
+          "cosine_similarity": 0.987097,
+          "matchup": "HOU at NYJ",
+          "week": 14,
+          "quarter": 4,
+          "down": 2,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_1_MAN",
+          "route": "IN",
+          "same_metadata": [
+            "Down",
+            "Offensive formation",
+            "Receiver alignment",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.78,
+              22.24
+            ],
+            "deepest_defender_depth": [
+              18.72,
+              14.71
+            ],
+            "target_depth": [
+              4.35,
+              4.39
+            ],
+            "target_separation": [
+              4.687,
+              3.832
+            ],
+            "mean_speed": [
+              2.776,
+              2.818
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "play_id": "2023110504-1692",
+          "split": "train",
+          "cosine_similarity": 0.986253,
+          "matchup": "LA at GB",
+          "week": 9,
+          "quarter": 2,
+          "down": 3,
+          "yards_to_go": 3,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "IN",
+          "same_metadata": [
+            "Offensive formation",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.78,
+              29.46
+            ],
+            "deepest_defender_depth": [
+              18.72,
+              20.22
+            ],
+            "target_depth": [
+              4.35,
+              3.52
+            ],
+            "target_separation": [
+              4.687,
+              2.257
+            ],
+            "mean_speed": [
+              2.776,
+              2.73
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "play_id": "2023091709-3278",
+          "split": "train",
+          "cosine_similarity": 0.986224,
+          "matchup": "SF at LA",
+          "week": 2,
+          "quarter": 4,
+          "down": 4,
+          "yards_to_go": 2,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_3_ZONE",
+          "route": "SLANT",
+          "same_metadata": [
+            "Offensive formation",
+            "Receiver alignment",
+            "Coverage label"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.78,
+              29.39
+            ],
+            "deepest_defender_depth": [
+              18.72,
+              12.96
+            ],
+            "target_depth": [
+              4.35,
+              3.45
+            ],
+            "target_separation": [
+              4.687,
+              4.77
+            ],
+            "mean_speed": [
+              2.776,
+              2.449
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "play_id": "2023101510-3721",
+          "split": "train",
+          "cosine_similarity": 0.985797,
+          "matchup": "ARI at LA",
+          "week": 6,
+          "quarter": 4,
+          "down": 3,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_4_ZONE",
+          "route": "SLANT",
+          "same_metadata": [
+            "Offensive formation",
+            "Receiver alignment"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.78,
+              28.19
+            ],
+            "deepest_defender_depth": [
+              18.72,
+              12.87
+            ],
+            "target_depth": [
+              4.35,
+              5.21
+            ],
+            "target_separation": [
+              4.687,
+              4.805
+            ],
+            "mean_speed": [
+              2.776,
+              1.945
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "play_id": "2023121708-2367",
+          "split": "validation",
+          "cosine_similarity": 0.984862,
+          "matchup": "BAL at JAX",
+          "week": 15,
+          "quarter": 3,
+          "down": 3,
+          "yards_to_go": 2,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_1_MAN",
+          "route": "SLANT",
+          "same_metadata": [
+            "Quarter",
+            "Offensive formation",
+            "Receiver alignment"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.78,
+              19.61
+            ],
+            "deepest_defender_depth": [
+              18.72,
+              22.42
+            ],
+            "target_depth": [
+              4.35,
+              2.69
+            ],
+            "target_separation": [
+              4.687,
+              3.232
+            ],
+            "mean_speed": [
+              2.776,
+              3.768
+            ]
+          }
+        }
+      ],
+      "plan": "hnsw_index_scan",
+      "selection": "hash-chosen test play (smallest sha256('retrieval-examples-v1:<id>'))"
+    },
+    {
+      "query_play_id": "2023122800-1094",
+      "query_split": "test",
+      "query": {
+        "week": 17,
+        "quarter": 1,
+        "down": 2,
+        "yards_to_go": 11,
+        "formation": "SHOTGUN"
+      },
+      "neighbours": [
+        {
+          "rank": 1,
+          "play_id": "2023091706-1703",
+          "split": "train",
+          "cosine_similarity": 0.9855,
+          "matchup": "CHI at TB",
+          "week": 2,
+          "quarter": 2,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_2_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Offensive formation",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.27,
+              27.3
+            ],
+            "deepest_defender_depth": [
+              15.64,
+              21.57
+            ],
+            "target_depth": [
+              4.08,
+              2.89
+            ],
+            "target_separation": [
+              2.313,
+              5.58
+            ],
+            "mean_speed": [
+              2.087,
+              2.613
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "play_id": "2024010706-455",
+          "split": "test",
+          "cosine_similarity": 0.98506,
+          "matchup": "CHI at GB",
+          "week": 18,
+          "quarter": 1,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_2_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Quarter",
+            "Offensive formation",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.27,
+              23.94
+            ],
+            "deepest_defender_depth": [
+              15.64,
+              18.84
+            ],
+            "target_depth": [
+              4.08,
+              4.29
+            ],
+            "target_separation": [
+              2.313,
+              5.123
+            ],
+            "mean_speed": [
+              2.087,
+              3.085
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "play_id": "2023111300-2265",
+          "split": "train",
+          "cosine_similarity": 0.983687,
+          "matchup": "DEN at BUF",
+          "week": 10,
+          "quarter": 2,
+          "down": 3,
+          "yards_to_go": 6,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_6_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Offensive formation",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.27,
+              38.62
+            ],
+            "deepest_defender_depth": [
+              15.64,
+              14.63
+            ],
+            "target_depth": [
+              4.08,
+              3.48
+            ],
+            "target_separation": [
+              2.313,
+              4.111
+            ],
+            "mean_speed": [
+              2.087,
+              2.403
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "play_id": "2023101511-3785",
+          "split": "train",
+          "cosine_similarity": 0.983621,
+          "matchup": "PHI at NYJ",
+          "week": 6,
+          "quarter": 4,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_6_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Offensive formation",
+            "Coverage label",
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.27,
+              26.1
+            ],
+            "deepest_defender_depth": [
+              15.64,
+              15.06
+            ],
+            "target_depth": [
+              4.08,
+              3.23
+            ],
+            "target_separation": [
+              2.313,
+              2.37
+            ],
+            "mean_speed": [
+              2.087,
+              2.846
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "play_id": "2023123112-1046",
+          "split": "test",
+          "cosine_similarity": 0.982259,
+          "matchup": "LAC at DEN",
+          "week": 17,
+          "quarter": 2,
+          "down": 1,
+          "yards_to_go": 10,
+          "formation": "EMPTY",
+          "alignment": "3x2",
+          "coverage": "COVER_4_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Targeted receiver route"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              30.27,
+              39.6
+            ],
+            "deepest_defender_depth": [
+              15.64,
+              17.2
+            ],
+            "target_depth": [
+              4.08,
+              3.86
+            ],
+            "target_separation": [
+              2.313,
+              1.754
+            ],
+            "mean_speed": [
+              2.087,
+              1.919
+            ]
+          }
+        }
+      ],
+      "plan": "hnsw_index_scan",
+      "selection": "hash-chosen test play (smallest sha256('retrieval-examples-v1:<id>'))"
+    },
+    {
+      "query_play_id": "2023111600-2424",
+      "query_split": "train",
+      "query": {
+        "week": 11,
+        "quarter": 2,
+        "down": 3,
+        "yards_to_go": 7,
+        "formation": "SHOTGUN"
+      },
+      "neighbours": [
+        {
+          "rank": 1,
+          "play_id": "2024010708-1765",
+          "split": "test",
+          "cosine_similarity": 0.926663,
+          "matchup": "DEN at LV",
+          "week": 18,
+          "quarter": 2,
+          "down": 3,
+          "yards_to_go": 15,
+          "formation": "EMPTY",
+          "alignment": "3x2",
+          "coverage": "COVER_3_ZONE",
+          "route": "IN",
+          "same_metadata": [
+            "Down",
+            "Quarter"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              43.49,
+              32.15
+            ],
+            "deepest_defender_depth": [
+              14.57,
+              26.76
+            ],
+            "target_depth": [
+              13.85,
+              13.82
+            ],
+            "target_separation": [
+              1.436,
+              2.011
+            ],
+            "mean_speed": [
+              5.549,
+              4.044
+            ]
+          }
+        },
+        {
+          "rank": 2,
+          "play_id": "2023123106-2872",
+          "split": "test",
+          "cosine_similarity": 0.922397,
+          "matchup": "CAR at JAX",
+          "week": 17,
+          "quarter": 4,
+          "down": 4,
+          "yards_to_go": 12,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Offensive formation"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              43.49,
+              29.65
+            ],
+            "deepest_defender_depth": [
+              14.57,
+              20.55
+            ],
+            "target_depth": [
+              13.85,
+              17.93
+            ],
+            "target_separation": [
+              1.436,
+              2.957
+            ],
+            "mean_speed": [
+              5.549,
+              4.023
+            ]
+          }
+        },
+        {
+          "rank": 3,
+          "play_id": "2023111911-2457",
+          "split": "train",
+          "cosine_similarity": 0.913725,
+          "matchup": "MIN at DEN",
+          "week": 11,
+          "quarter": 3,
+          "down": 3,
+          "yards_to_go": 3,
+          "formation": "SHOTGUN",
+          "alignment": "2x2",
+          "coverage": "COVER_2_ZONE",
+          "route": "GO",
+          "same_metadata": [
+            "Down",
+            "Offensive formation",
+            "Receiver alignment"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              43.49,
+              48.23
+            ],
+            "deepest_defender_depth": [
+              14.57,
+              29.33
+            ],
+            "target_depth": [
+              13.85,
+              20.31
+            ],
+            "target_separation": [
+              1.436,
+              4.164
+            ],
+            "mean_speed": [
+              5.549,
+              4.402
+            ]
+          }
+        },
+        {
+          "rank": 4,
+          "play_id": "2023112609-580",
+          "split": "train",
+          "cosine_similarity": 0.912778,
+          "matchup": "BUF at PHI",
+          "week": 12,
+          "quarter": 1,
+          "down": 3,
+          "yards_to_go": 16,
+          "formation": "SHOTGUN",
+          "alignment": "3x1",
+          "coverage": "COVER_4_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Down",
+            "Offensive formation"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              43.49,
+              29.13
+            ],
+            "deepest_defender_depth": [
+              14.57,
+              19.47
+            ],
+            "target_depth": [
+              13.85,
+              16.41
+            ],
+            "target_separation": [
+              1.436,
+              1.936
+            ],
+            "mean_speed": [
+              5.549,
+              4.036
+            ]
+          }
+        },
+        {
+          "rank": 5,
+          "play_id": "2023120307-3329",
+          "split": "train",
+          "cosine_similarity": 0.910245,
+          "matchup": "DEN at HOU",
+          "week": 13,
+          "quarter": 4,
+          "down": 3,
+          "yards_to_go": 17,
+          "formation": "SHOTGUN",
+          "alignment": "2x1",
+          "coverage": "COVER_3_ZONE",
+          "route": "HITCH",
+          "same_metadata": [
+            "Down",
+            "Offensive formation"
+          ],
+          "structure_query_vs_neighbour": {
+            "offense_width": [
+              43.49,
+              29.53
+            ],
+            "deepest_defender_depth": [
+              14.57,
+              29.27
+            ],
+            "target_depth": [
+              13.85,
+              16.01
+            ],
+            "target_separation": [
+              1.436,
+              3.086
+            ],
+            "mean_speed": [
+              5.549,
+              4.417
+            ]
+          }
+        }
+      ],
+      "plan": "hnsw_index_scan",
+      "selection": "weakest nearest neighbour in the benchmark sample"
+    }
+  ],
+  "offline_embedding_quality": {
+    "note": "Measured in Phase 3 (label agreement of nearest neighbours, test queries against the train corpus). A different measurement from ANN recall; not re-run here.",
+    "source": "docs/evaluation/trajectory-gnn-transformer-v1.json#embedding_sanity"
+  }
+}

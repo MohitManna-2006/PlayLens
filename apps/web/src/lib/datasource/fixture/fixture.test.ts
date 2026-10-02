@@ -46,12 +46,25 @@ describe("fixture source honours the contract", () => {
     expect(noSnap.snapIndex).toBeNull();
   });
 
-  it("excludes the self-match from retrieval and ranks by cosine", async () => {
+  it("excludes the self-match from retrieval, ranks by cosine, and says it is a baseline", async () => {
     const r = await client.findSimilar({ play_id: "10-1", k: 5 });
-    expect(r.results.map((x) => x.play.id)).not.toContain("10-1");
-    const scores = r.results.map((x) => x.score);
+    expect(r.results.map((x) => x.play_id)).not.toContain("10-1");
+    const scores = r.results.map((x) => x.cosine_similarity);
     expect([...scores].sort((a, b) => b - a)).toEqual(scores);
     scores.forEach((s) => expect(Math.abs(s)).toBeLessThanOrEqual(1 + 1e-9));
+    expect(r.retrieval.representation).toBe("baseline_descriptor");
+    expect(r.results.every((x) => x.split === "unknown")).toBe(true);
+    const down = r.results[0].play.down;
+    const filtered = await client.findSimilar({ play_id: "10-1", k: 50, filters: { down } });
+    expect(filtered.results.every((x) => x.play.down === down)).toBe(true);
+  });
+
+  it("compares two plays with ranks and evidence", async () => {
+    const c = await client.compare({ left_play_id: "10-1", right_play_id: "10-2" });
+    expect(c.left.play_id).toBe("10-1");
+    expect(c.evidence.length).toBeGreaterThan(0);
+    if (c.similarity) expect(c.similarity.right_rank_from_left).toBeGreaterThanOrEqual(1);
+    await expect(client.compare({ left_play_id: "10-1", right_play_id: "10-1" })).rejects.toMatchObject({ code: "invalid_comparison" });
   });
 
   it("predicts a straight constant-velocity path from the origin", async () => {

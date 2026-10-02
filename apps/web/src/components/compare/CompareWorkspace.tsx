@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Link2, Link2Off, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, RotateCcw, SkipForward } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
@@ -22,19 +22,18 @@ import { WorkspaceHeader } from "@/components/workspace/WorkspaceHeader";
 import { timelineLane, timeOrigin } from "@/components/play/PlayWorkspace";
 import type { AnalystAction } from "@/lib/analyst/schema";
 import { useAnalystState, type ActionOutcome } from "@/lib/analyst/store";
-import { align, phaseAvailable, type Alignment, type AlignMode } from "@/lib/compare/alignment";
-import type { CompareResult, PlaySummary } from "@/lib/contracts";
-import { isUnavailable } from "@/lib/contracts";
+import { align, ALIGN_MODES, DEFAULT_ALIGN, phaseAvailable, snapAvailable, type Alignment, type AlignMode } from "@/lib/compare/alignment";
+import { masterClock, resync, sideEnded, sideFrameIndex, sideTime, unsync, type Side } from "@/lib/compare/sync";
+import type { CompareResponse, Evidence, PlaySummary } from "@/lib/contracts";
+import { isRetrievalDown, isUnavailable } from "@/lib/contracts";
 import { errorMessage, getClient } from "@/lib/datasource";
-import { cosine, downDistance, elapsed, fixed, matchup, playerLabel, quarterClock, signed } from "@/lib/format";
+import { codeLabel, cosine, downDistance, elapsed, fixed, matchup, percent, playerLabel, quarterClock, signed } from "@/lib/format";
 import { atLeast, useBreakpoint } from "@/lib/hooks/useBreakpoint";
 import { usePlayData } from "@/lib/hooks/usePlayData";
-import { Clock, SPEEDS, useClockState, useTimeDerived, type TimeSource } from "@/lib/replay/clock";
+import { SPEEDS, useClockState, useTimeDerived, type Clock, type TimeSource } from "@/lib/replay/clock";
 import { handleReplayKey } from "@/lib/replay/keys";
 import { FULL_FIELD, unionExtent } from "@/lib/tracking/geometry";
 import { actionExtent, frameIndexAt, type TrackingSeries } from "@/lib/tracking/series";
-
-type Side = "left" | "right";
 
 function mappedLane(series: TrackingSeries, id: Side, map: (t: number) => number): TimelineLane {
   const base = timelineLane(series, id, id === "left" ? "Left" : "Right");
@@ -46,16 +45,13 @@ function mappedLane(series: TrackingSeries, id: Side, map: (t: number) => number
   };
 }
 
-function clampTime(series: TrackingSeries, t: number) {
-  return Math.min(series.times[series.times.length - 1], Math.max(series.times[0], t));
-}
-
 export function CompareWorkspace() {
   const params = useSearchParams();
   const router = useRouter();
   const leftId = params.get("left");
   const rightId = params.get("right");
-  const requested = (["snap", "start", "phase"].includes(params.get("align") ?? "") ? params.get("align") : "snap") as AlignMode;
+  const alignParam = params.get("align");
+  const requested: AlignMode = ALIGN_MODES.find((m) => m === alignParam) ?? DEFAULT_ALIGN;
   const client = getClient();
   const L = usePlayData(leftId);
   const R = usePlayData(rightId);
@@ -66,8 +62,9 @@ export function CompareWorkspace() {
 
   const cmp = useQuery({
     queryKey: ["compare", leftId, rightId],
-    queryFn: ({ signal }) => client.compare(leftId!, rightId!, signal),
-    enabled: !!leftId && !!rightId,
+    queryFn: ({ signal }) => client.compare({ left_play_id: leftId!, right_play_id: rightId! }, signal),
+    enabled: !!leftId && !!rightId && leftId !== rightId,
+    retry: false,
   });
 
   const [overlays, setOverlays] = useState<OverlayState>(DEFAULT_OVERLAYS);
@@ -82,13 +79,7 @@ export function CompareWorkspace() {
   const rs = R.series;
   const alignment: Alignment | null = useMemo(() => (ls && rs ? align(ls, rs, requested) : null), [ls, rs, requested]);
 
-  const master = useMemo(
-    () =>
-      alignment
-        ? new Clock({ start: alignment.domain[0], end: alignment.domain[1], stops: alignment.stops, initial: Math.max(alignment.domain[0], Math.min(0, alignment.domain[1])) })
-        : null,
-    [alignment],
-  );
+  const master = useMemo(() => (alignment ? masterClock(alignment) : null), [alignment]);
   useEffect(() => () => master?.dispose(), [master]);
 
   const [locals, setLocals] = useState<{ left: Clock; right: Clock } | null>(null);
@@ -99,35 +90,53 @@ export function CompareWorkspace() {
 
   const unlink = () => {
     if (!ls || !rs || !alignment || !master) return;
-    master.pause();
-    const tau = master.getTime();
-    const mk = (s: TrackingSeries, t: number) =>
-      new Clock({ start: s.times[0], end: s.times[s.times.length - 1], stops: s.times, gaps: s.gaps.map((g) => ({ from: g.startTime, to: g.endTime })), initial: clampTime(s, t) });
-    setLocals({ left: mk(ls, alignment.toLeft(tau)), right: mk(rs, alignment.toRight(tau)) });
+    setLocals(unsync(master, alignment, ls, rs));
     setLinked(false);
-    announce("Unlinked. Each play now has its own replay controls.");
+    announce("Sync off. Each play now has its own replay controls.");
   };
   const relink = () => {
-    if (locals && alignment && master) master.seek(alignment.fromLeft(locals.left.getTime()));
+    if (locals && alignment && master) resync(master, alignment, locals);
     setLinked(true);
     setLocals(null);
-    announce("Linked again using the left play's time.");
+    announce("Sync on, from the left play's position.");
   };
 
   const idle: TimeSource = useMemo(() => ({ getTime: () => 0, subscribe: () => () => {} }), []);
-  const leftSource: TimeSource = useMemo(() => {
-    if (!linked && locals) return locals.left;
-    if (!master || !alignment || !ls) return idle;
-    return { getTime: () => clampTime(ls, alignment.toLeft(master.getTime())), subscribe: master.subscribe };
-  }, [linked, locals, master, alignment, ls, idle]);
-  const rightSource: TimeSource = useMemo(() => {
-    if (!linked && locals) return locals.right;
-    if (!master || !alignment || !rs) return idle;
-    return { getTime: () => clampTime(rs, alignment.toRight(master.getTime())), subscribe: master.subscribe };
-  }, [linked, locals, master, alignment, rs, idle]);
+  // Each field reads its own time from the master clock: continuous while playing,
+  // the aligned real frame when paused (it also redraws on play/pause).
+  const synced = (side: Side, s: TrackingSeries | null): TimeSource => {
+    if (!linked && locals) return locals[side];
+    if (!master || !alignment || !s) return idle;
+    return {
+      getTime: () => sideTime(alignment, s, side, master.getTime(), master.getState().playing),
+      subscribe: (l) => {
+        const a = master.subscribe(l);
+        const b = master.subscribeState(l);
+        return () => {
+          a();
+          b();
+        };
+      },
+    };
+  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const leftSource: TimeSource = useMemo(() => synced("left", ls), [linked, locals, master, alignment, ls, idle]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const rightSource: TimeSource = useMemo(() => synced("right", rs), [linked, locals, master, alignment, rs, idle]);
 
-  const leftEnded = useTimeDerived(master ?? idle, (tau) => (linked && alignment && ls ? alignment.toLeft(tau) > ls.times[ls.times.length - 1] + 1e-6 : false));
-  const rightEnded = useTimeDerived(master ?? idle, (tau) => (linked && alignment && rs ? alignment.toRight(tau) > rs.times[rs.times.length - 1] + 1e-6 : false));
+  const leftEnded = useTimeDerived(master ?? idle, (tau) => (linked && alignment && ls ? sideEnded(alignment, ls, "left", tau) : false));
+  const rightEnded = useTimeDerived(master ?? idle, (tau) => (linked && alignment && rs ? sideEnded(alignment, rs, "right", tau) : false));
+
+  const showLastObserved = () => {
+    if (!ls || !rs) return;
+    if (linked && master && alignment) {
+      master.seek(alignment.mode === "origin" ? 0 : alignment.fromLeft(ls.times[ls.times.length - 1]));
+    } else if (locals) {
+      locals.left.toEnd();
+      locals.right.toEnd();
+    }
+    announce("Showing the last observed frame.");
+  };
 
   const extent = useMemo(() => {
     if (!ls || !rs || view === "full") return FULL_FIELD;
@@ -154,9 +163,9 @@ export function CompareWorkspace() {
   };
 
   /* ---- Analyst ---- */
-  const live = useRef({ selected, label: alignment?.label ?? "Snap-relative" });
+  const live = useRef({ selected, label: alignment?.label ?? "Normalized progress" });
   useEffect(() => {
-    live.current = { selected, label: alignment?.label ?? "Snap-relative" };
+    live.current = { selected, label: alignment?.label ?? "Normalized progress" };
     analyst.notifyContext();
   }, [selected, alignment, analyst]);
   useEffect(() => {
@@ -290,7 +299,7 @@ export function CompareWorkspace() {
     const cpId = selected && selected.side !== side ? (counterpart?.id ?? null) : null;
     return (
       <div className="@container min-w-0">
-        <PlayColumnHeader side={side} summary={P.detail.data ?? null} playId={id} />
+        <PlayColumnHeader side={side} summary={P.detail.data ?? null} playId={id} split={cmp.data ? cmp.data[side].split : null} />
         <div className="relative w-full" style={{ height: STAGE_HEIGHT }}>
           {err || P.seriesError ? (
             <div className="h-full bg-surface p-6">
@@ -310,7 +319,7 @@ export function CompareWorkspace() {
                   </button>
                 }
               >
-                {P.seriesError ?? errorMessage(err)} The other play remains inspectable; linked playback waits until both are valid.
+                {P.seriesError ?? errorMessage(err)} The other play remains inspectable; synced playback waits until both are valid.
               </StatusState>
             </div>
           ) : s ? (
@@ -343,7 +352,7 @@ export function CompareWorkspace() {
             <StagePlaceholder>Loading tracking frames</StagePlaceholder>
           )}
         </div>
-        {s && <SideFrameLine series={s} source={source} ended={ended} />}
+        {s && <SideFrameLine series={s} source={source} ended={ended} lastFrameId={cmp.data?.[side].last_frame_id ?? null} />}
         {!linked && locals && s && (
           <ReplayDock
             clock={side === "left" ? locals.left : locals.right}
@@ -358,6 +367,14 @@ export function CompareWorkspace() {
   };
 
   const leftSummary = L.detail.data;
+  const sim = cmp.data?.similarity ?? null;
+  const modeItem = (m: AlignMode, label: string, hint: string, available = true) => ({
+    value: m,
+    label,
+    hint: available ? hint : "Needs the same events in both plays (this dataset has none)",
+    checked: alignment?.mode === m,
+    disabled: !available,
+  });
   return (
     <div ref={container} className="mx-auto max-w-[calc(1680px+2*var(--page-pad))] px-[var(--page-pad)] pb-16">
       <WorkspaceHeader
@@ -365,36 +382,37 @@ export function CompareWorkspace() {
         title="Compare"
         subtitle={leftSummary ? `${matchup(leftSummary)}${R.detail.data ? ` vs ${matchup(R.detail.data)}` : ""}` : undefined}
         meta={[
-          <span key="a" className="font-sans text-caption text-fg-2">
-            Alignment:
+          <span key="l" className="font-sans text-caption text-fg-2">
+            {linked ? "Sync on ·" : "Sync off (independent) ·"}
           </span>,
           <MenuButton
             key="m"
-            label="Alignment"
+            label="Sync mode"
             triggerClassName="inline-flex h-[18px] items-center gap-1 rounded-control font-sans text-caption text-fg hover:underline"
-            triggerContent={<span>{alignment?.label ?? "Snap-relative"}</span>}
-            width={300}
+            triggerContent={<span>{alignment?.label ?? "Normalized progress"}</span>}
+            width={340}
             disabled={!alignment}
             groups={[
               {
                 items: [
-                  { value: "snap", label: "Snap-relative", hint: "Elapsed seconds from each play's snap", checked: alignment?.mode === "snap" },
-                  { value: "start", label: "From recording start", hint: "Elapsed seconds from each recording's first frame", checked: alignment?.mode === "start" },
-                  {
-                    value: "phase",
-                    label: "Phase aligned",
-                    hint: ls && rs && phaseAvailable(ls, rs) ? "Maps snap, throw, and arrival; playback speeds differ" : "Needs snap, throw, and arrival events in both plays",
-                    checked: alignment?.mode === "phase",
-                    disabled: !(ls && rs && phaseAvailable(ls, rs)),
-                  },
+                  modeItem("progress", "Normalized progress", "First observed frame (0%) to last observed frame (100%) together; speeds differ"),
+                  modeItem("origin", "Last observed frame", "Real seconds before each play's last observed frame (the forecast origin)"),
+                  modeItem("start", "From recording start", "Real seconds from each play's first observed frame"),
+                  modeItem("snap", "Snap-relative", "Real seconds from each play's snap", !!(ls && rs && snapAvailable(ls, rs))),
+                  modeItem("phase", "Phase aligned", "Maps snap, throw, and arrival; speeds differ", !!(ls && rs && phaseAvailable(ls, rs))),
                 ],
               },
             ]}
             onSelect={(i) => setAlign(i.value as AlignMode)}
           />,
-          <span key="l" className="font-sans text-caption text-fg-2">
-            {linked ? "Linked playback" : "Independent playback"}
-          </span>,
+          ...(sim
+            ? [
+                <span key="s" className="font-sans text-caption text-fg-2">
+                  <span className="text-fg">#{sim.right_rank_from_left}</span> nearest to the left play of {sim.rank_pool.toLocaleString()} · cosine{" "}
+                  <span className="num">{cosine(sim.cosine_similarity)}</span>
+                </span>,
+              ]
+            : []),
         ]}
         actions={
           <Link href={`/explore?compare_left=${encodeURIComponent(leftId)}`} className="btn btn-quiet">
@@ -406,6 +424,11 @@ export function CompareWorkspace() {
         <div className="-mt-1 mb-2" role="status">
           <WarningLine>{alignment.fallbackReason}</WarningLine>
         </div>
+      )}
+      {leftId && rightId && leftId === rightId && (
+        <StatusState kind="warning" title="Both sides show the same play">
+          Choose a different right play to compare.
+        </StatusState>
       )}
 
       <section
@@ -462,24 +485,15 @@ export function CompareWorkspace() {
             )}
 
             {linked && master && alignment && ls && rs ? (
-              <CompareDock
-                clock={master}
-                alignment={alignment}
-                left={ls}
-                right={rs}
-                onUnlink={unlink}
-              />
+              <CompareDock clock={master} alignment={alignment} left={ls} right={rs} onSyncChange={unlink} onLast={showLastObserved} />
             ) : !linked ? (
-              <div className="flex items-center justify-between border-t border-border py-2">
-                <p className="text-caption text-fg-2">Independent seeking. Each play keeps its own timestamps and frames.</p>
-                <button type="button" className="btn" onClick={relink}>
-                  <Link2 size={14} strokeWidth={1.5} aria-hidden />
-                  Relink
-                </button>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2">
+                <p className="text-caption text-fg-2">Sync is off: scrub each play with its own controls. Each keeps its own timestamps and frames.</p>
+                <SyncSwitch on={false} onChange={relink} />
               </div>
             ) : rightId ? (
               <div className="h-24 border-t border-border">
-                <p className="mt-3 text-caption text-muted">Linked playback starts when both plays have loaded.</p>
+                <p className="mt-3 text-caption text-muted">Synced playback starts when both plays have loaded.</p>
               </div>
             ) : null}
           </div>
@@ -493,14 +507,14 @@ export function CompareWorkspace() {
 
       {analystOpen && !sidePane && <AnalystPane variant={single ? "sheet" : "inline"} className="mt-4" />}
 
-      {rightId && (
-        <Differences
+      {rightId && leftId !== rightId && (
+        <EvidencePanel
           result={cmp.data}
           error={cmp.error ? errorMessage(cmp.error) : null}
-          unavailable={isUnavailable(cmp.error)}
+          unavailable={isUnavailable(cmp.error) || isRetrievalDown(cmp.error)}
           loading={cmp.isPending}
-          leftId={leftId}
-          rightId={rightId}
+          onRetry={() => cmp.refetch()}
+          onShowLast={ls && rs ? showLastObserved : null}
         />
       )}
 
@@ -514,18 +528,23 @@ export function CompareWorkspace() {
   );
 }
 
-function PlayColumnHeader({ side, summary, playId }: { side: Side; summary: PlaySummary | null; playId: string }) {
+const SPLIT_TEXT: Record<string, string> = { train: "train", validation: "validation", test: "held-out test" };
+
+function PlayColumnHeader({ side, summary, playId, split }: { side: Side; summary: PlaySummary | null; playId: string; split: string | null }) {
   return (
     <div className="flex h-12 flex-col justify-center">
       <p className="eyebrow text-fg-2">
         {side === "left" ? "Left" : "Right"} · <span className="num font-normal tracking-normal normal-case">Play {playId}</span>
+        {split && SPLIT_TEXT[split] && <span className="ml-2 font-normal tracking-normal normal-case text-muted">{SPLIT_TEXT[split]}</span>}
       </p>
       {summary ? (
         <p className="flex min-w-0 gap-3 text-body-2">
-          <Link href={`/play/${encodeURIComponent(playId)}`} className="truncate font-medium text-fg hover:underline">
+          <Link href={`/play/${encodeURIComponent(playId)}`} className="truncate font-medium text-fg hover:underline" aria-label={`Open play ${playId}: ${matchup(summary)}`}>
             {matchup(summary)}
           </Link>
-          <span className="num shrink-0 text-meta text-fg-2">{[quarterClock(summary), downDistance(summary)].filter(Boolean).join("  ")}</span>
+          <span className="num shrink-0 text-meta text-fg-2">
+            {[quarterClock(summary), downDistance(summary), codeLabel(summary.context.offense_formation)].filter(Boolean).join("  ")}
+          </span>
         </p>
       ) : (
         <div className="skeleton mt-1 h-3 w-48" />
@@ -534,13 +553,15 @@ function PlayColumnHeader({ side, summary, playId }: { side: Side; summary: Play
   );
 }
 
-function SideFrameLine({ series, source, ended }: { series: TrackingSeries; source: TimeSource; ended: boolean }) {
+function SideFrameLine({ series, source, ended, lastFrameId }: { series: TrackingSeries; source: TimeSource; ended: boolean; lastFrameId: number | null }) {
   const i = useTimeDerived(source, (t) => frameIndexAt(series.times, t));
   const o = timeOrigin(series);
+  const n = series.frameIds.length;
   return (
-    <p className="num mt-1 text-meta text-fg-2">
-      Frame {series.frameIds[i]} · {elapsed(series.times[i] - o.time)}
+    <p className="num mt-1 text-meta text-fg-2" aria-live="off">
+      Frame {series.frameIds[i]} <span className="font-sans text-caption text-muted">({i + 1} of {n})</span> · {elapsed(series.times[i] - o.time)}
       <span className="ml-1 font-sans text-caption text-muted">{o.kind === "snap" ? "from snap" : "from recording start"}</span>
+      {lastFrameId !== null && series.frameIds[i] === lastFrameId && <span className="ml-2 font-sans text-caption text-fg">Last observed frame</span>}
       {ended && <span className="ml-2 font-sans text-caption text-fg">Ended</span>}
     </p>
   );
@@ -548,7 +569,7 @@ function SideFrameLine({ series, source, ended }: { series: TrackingSeries; sour
 
 function ChooseRight({ leftId }: { leftId: string }) {
   const client = getClient();
-  const sim = useQuery({ queryKey: ["similar", leftId], queryFn: ({ signal }) => client.findSimilar({ play_id: leftId, k: 5 }, signal), retry: false });
+  const sim = useQuery({ queryKey: ["similar", leftId, "approximate", {}], queryFn: ({ signal }) => client.findSimilar({ play_id: leftId, k: 5 }, signal), retry: false });
   return (
     <div className="min-w-0">
       <div className="flex h-12 flex-col justify-center">
@@ -559,14 +580,15 @@ function ChooseRight({ leftId }: { leftId: string }) {
         {sim.data && sim.data.results.length > 0 ? (
           <>
             <p className="mt-1 text-caption text-fg-2">
-              Nearest by <span className="num">{sim.data.model_version}</span> · cosine, not a probability
+              Nearest by <span className="num">{sim.data.retrieval.model_version}</span> · cosine, not a probability
             </p>
             <ul className="mt-3">
               {sim.data.results.map((r) => (
-                <li key={r.play.id} className="flex h-10 items-center gap-3 border-b border-border">
+                <li key={r.play_id} className="flex h-10 items-center gap-3 border-b border-border">
+                  <span className="num w-6 text-meta text-fg">#{r.rank}</span>
                   <span className="min-w-0 flex-1 truncate text-body-2">{matchup(r.play)}</span>
-                  <span className="num text-meta text-fg-2">{cosine(r.score)}</span>
-                  <Link href={`/compare?left=${encodeURIComponent(leftId)}&right=${encodeURIComponent(r.play.id)}`} className="btn btn-quiet btn-sm">
+                  <span className="num text-meta text-fg-2">{cosine(r.cosine_similarity)}</span>
+                  <Link href={`/compare?left=${encodeURIComponent(leftId)}&right=${encodeURIComponent(r.play_id)}`} className="btn btn-quiet btn-sm">
                     Compare
                   </Link>
                 </li>
@@ -637,21 +659,50 @@ function SelectionLine({
   );
 }
 
-function CompareDock({ clock, alignment, left, right, onUnlink }: { clock: Clock; alignment: Alignment; left: TrackingSeries; right: TrackingSeries; onUnlink: () => void }) {
+/** Sync toggle: a labelled switch, so state is not carried by color. */
+function SyncSwitch({ on, onChange }: { on: boolean; onChange: () => void }) {
+  return (
+    <Tooltip content={on ? "Turn sync off to scrub each play on its own" : "Sync both plays to one clock again, from the left play's position"} describe={false}>
+      <button type="button" role="switch" aria-checked={on} className="btn btn-control" data-active={on} onClick={onChange}>
+        <span aria-hidden className={`inline-block h-3 w-6 rounded-full border border-control p-[1px] ${on ? "bg-selected" : ""}`}>
+          <span className={`block h-full w-2.5 rounded-full ${on ? "translate-x-2.5 bg-accent" : "bg-control"}`} />
+        </span>
+        Sync {on ? "on" : "off"}
+      </button>
+    </Tooltip>
+  );
+}
+
+function CompareDock({
+  clock,
+  alignment,
+  left,
+  right,
+  onSyncChange,
+  onLast,
+}: {
+  clock: Clock;
+  alignment: Alignment;
+  left: TrackingSeries;
+  right: TrackingSeries;
+  onSyncChange: () => void;
+  onLast: () => void;
+}) {
   const { playing, speed } = useClockState(clock);
-  const li = useTimeDerived(clock, (tau) => frameIndexAt(left.times, clampTime(left, alignment.toLeft(tau))));
-  const ri = useTimeDerived(clock, (tau) => frameIndexAt(right.times, clampTime(right, alignment.toRight(tau))));
-  const tau = useTimeDerived(clock, (t) => Math.round(t * 10) / 10);
+  const li = useTimeDerived(clock, (tau) => sideFrameIndex(alignment, left, "left", tau, clock.getState().playing));
+  const ri = useTimeDerived(clock, (tau) => sideFrameIndex(alignment, right, "right", tau, clock.getState().playing));
+  const tau = useTimeDerived(clock, (t) => Math.round(t * 100) / 100);
   const lanes = useMemo(() => [mappedLane(left, "left", alignment.fromLeft), mappedLane(right, "right", alignment.fromRight)], [left, right, alignment]);
+  const position = (t: number) => (alignment.progressAt ? percent(alignment.progressAt(t), 0) : elapsed(t));
   const valueText = (t: number) => {
-    const a = frameIndexAt(left.times, clampTime(left, alignment.toLeft(t)));
-    const b = frameIndexAt(right.times, clampTime(right, alignment.toRight(t)));
-    return `${elapsed(t)} ${alignment.label}. Left frame ${left.frameIds[a]}, right frame ${right.frameIds[b]}.`;
+    const a = sideFrameIndex(alignment, left, "left", t, false);
+    const b = sideFrameIndex(alignment, right, "right", t, false);
+    return `${position(t)}, ${alignment.label}. Left frame ${left.frameIds[a]} of ${left.frameIds.length}, right frame ${right.frameIds[b]} of ${right.frameIds.length}.`;
   };
   return (
-    <div className="h-24 border-t border-border">
-      <div className="flex h-10 items-center gap-1">
-        <button type="button" className="btn btn-lg btn-icon" aria-label={playing ? "Pause" : "Play"} onClick={() => clock.toggle()}>
+    <div className="border-t border-border">
+      <div className="flex min-h-10 flex-wrap items-center gap-1">
+        <button type="button" className="btn btn-lg btn-icon" aria-label={playing ? "Pause both plays" : "Play both plays"} onClick={() => clock.toggle()}>
           {playing ? <Pause size={20} strokeWidth={1.5} aria-hidden /> : <Play size={20} strokeWidth={1.5} aria-hidden />}
         </button>
         <button type="button" className="btn btn-quiet btn-icon" aria-label="Previous frame" onClick={() => clock.step(-1)}>
@@ -660,31 +711,37 @@ function CompareDock({ clock, alignment, left, right, onUnlink }: { clock: Clock
         <button type="button" className="btn btn-quiet btn-icon" aria-label="Next frame" onClick={() => clock.step(1)}>
           <ChevronRight size={16} strokeWidth={1.5} aria-hidden />
         </button>
+        <button type="button" className="btn btn-quiet" aria-label="Reset both plays to the start" onClick={() => clock.seek(alignment.initial)}>
+          <RotateCcw size={14} strokeWidth={1.5} aria-hidden />
+          <span className="hidden sm:inline">Reset</span>
+        </button>
+        <button type="button" className="btn btn-quiet" aria-label="Show the last observed frame of both plays" onClick={onLast}>
+          <SkipForward size={14} strokeWidth={1.5} aria-hidden />
+          <span className="hidden sm:inline">Last observed</span>
+        </button>
         <div role="radiogroup" aria-label="Playback speed" className="segmented ml-2 hidden md:inline-flex">
-          {SPEEDS.map((s) => (
-            <button key={s} type="button" role="radio" aria-checked={speed === s} className="num" onClick={() => clock.setSpeed(s)}>
-              {s}×
+          {SPEEDS.map((sp) => (
+            <button key={sp} type="button" role="radio" aria-checked={speed === sp} className="num" onClick={() => clock.setSpeed(sp)}>
+              {sp}×
             </button>
           ))}
         </div>
         <p className="num ml-3 text-meta text-fg" aria-hidden>
-          {elapsed(tau)} <span className="font-sans text-caption text-muted">{alignment.label}</span>
+          {position(tau)} <span className="font-sans text-caption text-muted">{alignment.label}</span>
         </p>
         <p className="num ml-3 hidden text-meta text-fg-2 lg:block" aria-hidden>
           L frame {left.frameIds[li]} · R frame {right.frameIds[ri]}
         </p>
-        <Tooltip content="Seek each play independently" describe={false}>
-          <button type="button" className="btn btn-quiet ml-auto" onClick={onUnlink}>
-            <Link2Off size={14} strokeWidth={1.5} aria-hidden />
-            Unlink
-          </button>
-        </Tooltip>
+        <span className="ml-auto">
+          <SyncSwitch on onChange={onSyncChange} />
+        </span>
       </div>
+      <p className="mb-1 text-caption text-muted">{alignment.description}</p>
       <Timeline
         domain={alignment.domain}
         lanes={lanes}
         source={clock}
-        label="Linked replay position"
+        label="Synced replay position"
         valueText={valueText}
         onSeek={(t) => clock.seek(t)}
         onKey={(e) => handleReplayKey(e, clock, { canPlay: true })}
@@ -693,81 +750,156 @@ function CompareDock({ clock, alignment, left, right, onUnlink }: { clock: Clock
   );
 }
 
-function Differences({
+function evidenceValue(e: Evidence, side: "left" | "right"): string {
+  const text = side === "left" ? e.left_text : e.right_text;
+  const value = side === "left" ? e.left_value : e.right_value;
+  if (text !== null) return codeLabel(text) ?? text;
+  if (value === null) return "—";
+  if (e.id.endsWith("metadata.down")) return downLabel(value);
+  if (e.id.endsWith("metadata.quarter")) return value > 4 ? "OT" : `Q${value}`;
+  return `${fixed(value, e.decimals)}${e.unit ? ` ${e.unit}` : ""}`;
+}
+
+function downLabel(v: number): string {
+  return ["1st", "2nd", "3rd", "4th"][v - 1] ?? String(v);
+}
+
+function EvidencePanel({
   result,
   error,
   unavailable,
   loading,
-  leftId,
-  rightId,
+  onRetry,
+  onShowLast,
 }: {
-  result: CompareResult | undefined;
+  result: CompareResponse | undefined;
   error: string | null;
   unavailable: boolean;
   loading: boolean;
-  leftId: string;
-  rightId: string;
+  onRetry: () => void;
+  onShowLast: (() => void) | null;
 }) {
+  const sim = result?.similarity ?? null;
+  const context = result?.evidence.filter((e) => e.kind === "metadata") ?? [];
+  const structure = result?.evidence.filter((e) => e.kind === "structural_metric") ?? [];
   return (
-    <section aria-labelledby="diff-heading" className="mt-6">
-      <p className="text-body-2 text-fg-2">
-        {result?.similarity ? (
-          <>
-            Cosine similarity <span className="num text-fg">{cosine(result.similarity.score)}</span> · retrieval model{" "}
-            <span className="num text-fg">{result.similarity.model_version}</span>
-            {result.similarity.model_kind !== "learned" && " (baseline, not a learned embedding)"} · not a percentage or probability
-          </>
-        ) : result ? (
-          <>Similarity unavailable: {result.similarity_unavailable_reason}</>
-        ) : null}
-      </p>
-      <h2 id="diff-heading" className="mt-6 text-section font-semibold">
-        Structural differences
+    <section aria-labelledby="evidence-heading" className="mt-6">
+      <h2 id="evidence-heading" className="text-section font-semibold">
+        What is similar, what differs
       </h2>
       {loading ? (
-        <div className="skeleton mt-3 h-40 w-full" aria-label="Loading measures" />
+        <div className="skeleton mt-3 h-48 w-full" aria-label="Loading comparison evidence" />
       ) : error ? (
-        <StatusState kind={unavailable ? "unavailable" : "error"} title="Measures unavailable">
-          {error}
+        <StatusState
+          kind={unavailable ? "unavailable" : "error"}
+          title="Comparison evidence unavailable"
+          action={
+            <button type="button" className="btn" onClick={onRetry}>
+              Retry
+            </button>
+          }
+        >
+          {error} The replays above load independently of this panel.
         </StatusState>
       ) : result ? (
         <>
-          <p className="mt-1 text-caption text-fg-2">
-            Window: {result.window} · {result.source} · delta = right − left
+          <p className="mt-1 max-w-[820px] text-body-2 text-fg-2">
+            {sim ? (
+              <>
+                The {sim.representation === "learned_embedding" ? "learned play embedding" : "baseline descriptor"} (
+                <span className="num text-fg">{sim.model_version}</span>) ranks the right play{" "}
+                <span className="text-fg">#{sim.right_rank_from_left}</span> nearest to the left play and the left play{" "}
+                <span className="text-fg">#{sim.left_rank_from_right}</span> nearest to the right, among {sim.rank_pool.toLocaleString()} plays. Cosine similarity{" "}
+                <span className="num text-fg">{cosine(sim.cosine_similarity)}</span>
+                {sim.cosine_reference && (
+                  <>
+                    {" "}
+                    (nearest neighbours in this space have median <span className="num">{cosine(sim.cosine_reference.nearest_neighbor_p50)}</span>, random pairs{" "}
+                    <span className="num">{cosine(sim.cosine_reference.random_pair_p50)}</span>)
+                  </>
+                )}
+                ; not a probability.
+              </>
+            ) : (
+              <>Embedding similarity unavailable: {result.similarity_unavailable_reason} The evidence below does not need it.</>
+            )}
           </p>
-          <div className="scroll-quiet mt-3 overflow-x-auto">
-            <table className="data-table min-w-[560px]">
-              <thead>
-                <tr>
-                  <th scope="col">Measure</th>
-                  <th scope="col" className="n">Left · {leftId}</th>
-                  <th scope="col" className="n">Right · {rightId}</th>
-                  <th scope="col" className="n">Delta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.measures.map((m) => {
-                  const delta = m.left !== null && m.right !== null ? m.right - m.left : null;
-                  return (
-                    <tr key={m.key}>
+
+          <div className="mt-4 grid gap-6 lg:grid-cols-2">
+            <div className="scroll-quiet overflow-x-auto" role="region" aria-label="Play context" tabIndex={0}>
+              <p className="mb-2 text-caption text-muted">Context (pre-snap, and charted labels marked †)</p>
+              <table className="data-table min-w-[420px]">
+                <thead>
+                  <tr>
+                    <th scope="col">Field</th>
+                    <th scope="col">Left</th>
+                    <th scope="col">Right</th>
+                    <th scope="col">Relation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {context.map((e) => (
+                    <tr key={e.id}>
                       <th scope="row" className="font-normal text-fg-2">
-                        <Tooltip content={m.definition}>
+                        <Tooltip content={e.definition}>
                           <span tabIndex={0} className="cursor-help underline decoration-border decoration-dotted underline-offset-4">
-                            {m.label}
+                            {e.label}
+                            {e.source === "charted_label" && "†"}
                           </span>
                         </Tooltip>
-                        {delta === null && m.missing_reason && <span className="block text-caption text-muted">{m.missing_reason}</span>}
                       </th>
-                      <td className="n">{m.left === null ? "—" : `${fixed(m.left, m.decimals)} ${m.unit}`}</td>
-                      <td className="n">{m.right === null ? "—" : `${fixed(m.right, m.decimals)} ${m.unit}`}</td>
-                      <td className="n">{delta === null ? "—" : `${signed(delta, m.decimals)} ${m.unit}`}</td>
+                      <td>{evidenceValue(e, "left")}</td>
+                      <td>{evidenceValue(e, "right")}</td>
+                      <td className={e.relation === "same" ? "text-fg" : "text-muted"}>
+                        {e.relation === "same" ? "Same" : e.relation === "different" ? (e.delta !== null && e.unit ? `Differs (${signed(e.delta, e.decimals)} ${e.unit})` : "Differs") : "Not supplied"}
+                      </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="scroll-quiet overflow-x-auto" role="region" aria-label="Tracking measures" tabIndex={0}>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-caption text-muted">Tracking measures at the last observed frame · delta = right − left</p>
+                {onShowLast && (
+                  <button type="button" className="btn btn-quiet btn-sm" onClick={onShowLast}>
+                    Show that frame
+                  </button>
+                )}
+              </div>
+              <table className="data-table min-w-[420px]">
+                <thead>
+                  <tr>
+                    <th scope="col">Measure</th>
+                    <th scope="col" className="n">Left</th>
+                    <th scope="col" className="n">Right</th>
+                    <th scope="col" className="n">Delta</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {structure.map((e) => (
+                    <tr key={e.id}>
+                      <th scope="row" className="font-normal text-fg-2">
+                        <Tooltip content={e.definition}>
+                          <span tabIndex={0} className="cursor-help underline decoration-border decoration-dotted underline-offset-4">
+                            {e.label}
+                          </span>
+                        </Tooltip>
+                        {e.delta === null && e.missing_reason && <span className="block text-caption text-muted">{e.missing_reason}</span>}
+                      </th>
+                      <td className="n">{evidenceValue(e, "left")}</td>
+                      <td className="n">{evidenceValue(e, "right")}</td>
+                      <td className="n">{e.delta === null ? "—" : `${signed(e.delta, e.decimals)} ${e.unit ?? ""}`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-          {result.correspondence && <p className="mt-2 text-caption text-muted">Player correspondence: {result.correspondence.method}</p>}
+          <p className="mt-3 max-w-[820px] text-caption text-muted">
+            {result.evidence_note} Measures: {result.descriptor_version}, dataset <span className="num">{result.dataset_version}</span>.
+            {result.correspondence && <> Player correspondence: {result.correspondence.method}</>}
+          </p>
         </>
       ) : null}
     </section>

@@ -13,7 +13,6 @@
  * None of these have evaluation runs, so Evaluation reports them as pending.
  */
 import type {
-  CompareMeasure,
   ModelInfo,
   PlayDetail,
   PlayLabConfig,
@@ -279,7 +278,18 @@ function snapMeasures(series: TrackingSeries) {
   };
 }
 
-export function compareMeasures(left: TrackingSeries, right: TrackingSeries): CompareMeasure[] {
+export interface FixtureMeasure {
+  key: string;
+  label: string;
+  unit: string;
+  decimals: number;
+  left: number | null;
+  right: number | null;
+  missing_reason: string | null;
+  definition: string;
+}
+
+export function compareMeasures(left: TrackingSeries, right: TrackingSeries): FixtureMeasure[] {
   const l = snapMeasures(left);
   const r = snapMeasures(right);
   const noSnap = "No snap event; the snap-relative window is undefined";
@@ -343,7 +353,7 @@ export function snapCorrespondence(left: TrackingSeries, right: TrackingSeries) 
   const l = snapMeasures(left);
   const r = snapMeasures(right);
   if (!l || !r) return null;
-  const pairs: Array<{ left_player_id: string; right_player_id: string }> = [];
+  const pairs: Array<{ left_player_id: string; right_player_id: string; basis: string }> = [];
   for (const side of ["offense", "defense"] as const) {
     const rel = (s: TrackingSeries, view: Normalized, i: number) =>
       s.tracks
@@ -361,7 +371,7 @@ export function snapCorrespondence(left: TrackingSeries, right: TrackingSeries) 
       if (usedA.has(c.i) || usedB.has(c.j)) continue;
       usedA.add(c.i);
       usedB.add(c.j);
-      pairs.push({ left_player_id: a[c.i].id, right_player_id: b[c.j].id });
+      pairs.push({ left_player_id: a[c.i].id, right_player_id: b[c.j].id, basis: "relative position at the snap" });
     }
   }
   return { method: "Nearest relative position at the snap, same side (greedy). Computed; not an assignment.", pairs };

@@ -10,11 +10,13 @@ from ...schemas.models import (
     TrajectoryRequest,
 )
 from ...services.models import ModelRegistry, PredictionService, evaluation_report
-from ..deps import get_model_registry, get_prediction_service
+from ...services.retrieval import RetrievalService
+from ..deps import get_model_registry, get_prediction_service, get_retrieval_service
 
 router = APIRouter(tags=["models"])
 Registry = Annotated[ModelRegistry, Depends(get_model_registry)]
 Predictions = Annotated[PredictionService, Depends(get_prediction_service)]
+Retrieval = Annotated[RetrievalService, Depends(get_retrieval_service)]
 
 ERRORS: dict[int | str, dict[str, object]] = {
     404: {"model": ErrorEnvelope, "description": "Unknown play or model version."},
@@ -30,12 +32,22 @@ ERRORS: dict[int | str, dict[str, object]] = {
 
 
 @router.get("/models", response_model=list[ModelInfo], summary="Served models")
-def list_models(registry: Registry) -> list[ModelInfo]:
+def list_models(registry: Registry, retrieval: Retrieval) -> list[ModelInfo]:
     """Models loaded from trained artifacts, with dataset/split versions and metrics.
 
     Empty when no artifact exists; the web app then keeps forecasts unavailable.
+    ``retrieval`` is set on the model whose play embeddings are loaded and ready
+    for similarity search (from the last retrieval status check).
     """
-    return registry.infos()
+    infos = registry.infos()
+    served = retrieval.model_info()
+    if served is None:
+        return infos
+    version, info = served
+    return [
+        m.model_copy(update={"retrieval": info}) if m.model_version == version else m
+        for m in infos
+    ]
 
 
 @router.post(

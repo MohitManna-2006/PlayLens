@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": "retrieval_unavailable",
+    "details": null,
+    "message": "Retrieval is disabled: PLAYLENS_DATABASE_URL is empty.",
+    "request_id": "example",
+    "status": 503
+  }
+}

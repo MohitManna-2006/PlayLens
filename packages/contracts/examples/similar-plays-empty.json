@@ -1,0 +1,57 @@
+{
+  "evidence_note": "Evidence lists deterministic observations about both plays: pre-snap context, charted labels, and tracking descriptors. None of them is a model input, and none explains why the learned embedding places the plays close together.",
+  "query": {
+    "filters": {
+      "defense": null,
+      "down": 4,
+      "field_position_max": null,
+      "field_position_min": null,
+      "offense": null,
+      "offense_formation": null,
+      "quarter": null,
+      "splits": null,
+      "week_max": null,
+      "week_min": null,
+      "yards_to_go_max": null,
+      "yards_to_go_min": null
+    },
+    "k": 10,
+    "mode": "exact",
+    "model_version": "trajectory-test-v1",
+    "play_id": "2099090011-101",
+    "split": "train"
+  },
+  "request_id": "example",
+  "results": [],
+  "retrieval": {
+    "backend": "memory",
+    "candidates": 0,
+    "corpus_size": 13,
+    "cosine_reference": {
+      "description": "Cosine similarity in this embedding space: 200,000 random play pairs (median 0.161) and each play's single nearest neighbour (median 0.930). Scores are relative to this space, not probabilities.",
+      "nearest_neighbor_p05": 0.8435,
+      "nearest_neighbor_p50": 0.9305,
+      "nearest_neighbor_p95": 0.9807,
+      "random_pair_mean": 0.1651,
+      "random_pair_p50": 0.1607,
+      "random_pair_p95": 0.9542
+    },
+    "database_ms": 1.0,
+    "dataset_version": "nfl_bdb_2026_analytics@full-dac84a2a2cfa",
+    "embedding_dimension": 8,
+    "hnsw": null,
+    "latency_ms": 1.0,
+    "metric": "cosine",
+    "mode": "exact",
+    "model_version": "trajectory-test-v1",
+    "normalization": "L2-normalised; cosine similarity = dot product",
+    "plan": "exact_scan",
+    "representation": "learned_embedding",
+    "search_ms": 1.0,
+    "self_match_excluded": true,
+    "split_version": "synthetic-weeks-v1-1d504e6a0cdc"
+  },
+  "warnings": [
+    "Only 0 plays match these filters."
+  ]
+}

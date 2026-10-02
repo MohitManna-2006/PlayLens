@@ -10,7 +10,7 @@
 import type { ZodType } from "zod";
 import {
   ApiError,
-  CompareResultSchema,
+  CompareResponseSchema,
   CounterfactualResultSchema,
   DatasetStatusSchema,
   EvaluationReportSchema,
@@ -21,11 +21,12 @@ import {
   PlayDetailSchema,
   PlayLabConfigSchema,
   PlayPageSchema,
-  SimilarResultSchema,
+  SimilaritySearchResponseSchema,
   TrajectoryPredictionSchema,
+  type CompareRequest,
   type CounterfactualRequest,
   type PlayQuery,
-  type SimilarRequest,
+  type SimilarityRequest,
   type TrajectoryRequest,
 } from "@/lib/contracts";
 import { FixtureSource } from "./fixture";
@@ -61,8 +62,8 @@ export function createClient(raw: RawSource) {
     getFrames: (id: string, s?: AbortSignal) => raw.getFrames(id, s).then(parse(FramesPayloadSchema, "tracking frames")),
     getFuture: (id: string, s?: AbortSignal) => raw.getFuture(id, s).then(parse(FuturePayloadSchema, "actual future trajectories")),
     listModels: (s?: AbortSignal) => raw.listModels(s).then(parse(ModelListSchema, "model list")),
-    findSimilar: (r: SimilarRequest, s?: AbortSignal) => raw.findSimilar(r, s).then(parse(SimilarResultSchema, "similar plays")),
-    compare: (l: string, r: string, s?: AbortSignal) => raw.compare(l, r, s).then(parse(CompareResultSchema, "comparison")),
+    findSimilar: (r: SimilarityRequest, s?: AbortSignal) => raw.findSimilar(r, s).then(parse(SimilaritySearchResponseSchema, "similar plays")),
+    compare: (r: CompareRequest, s?: AbortSignal) => raw.compare(r, s).then(parse(CompareResponseSchema, "comparison")),
     predictTrajectory: (r: TrajectoryRequest, s?: AbortSignal) =>
       raw.predictTrajectory(r, s).then(parse(TrajectoryPredictionSchema, "trajectory prediction")),
     getPlayLabConfig: (id: string, s?: AbortSignal) => raw.getPlayLabConfig(id, s).then(parse(PlayLabConfigSchema, "PlayLab configuration")),

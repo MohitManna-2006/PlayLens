@@ -4,12 +4,17 @@ PlayLens is an AI-native NFL play intelligence platform that transforms player-t
 
 See [PLAYLENS_MASTERBRAIN.md](PLAYLENS_MASTERBRAIN.md) for the product specification, ML architecture, and guidelines.
 
-## Current status: Phase 3 (ML foundation)
+## Current status: Phase 4 (similarity search + Compare)
 
 Real tracking from the NFL Big Data Bowl 2026 Analytics release flows through a deterministic preprocessing pipeline into canonical Parquet artifacts, a FastAPI service, and the web app (Phase 2). Phase 3 adds game-safe temporal splits, constant-velocity baselines, a spatial-temporal graph encoder (GATv2 + Transformer) with a trajectory head, evaluation reports, a versioned model artifact, exported play embeddings, and real predicted paths in the Play view.
 
-Similar plays, compare measures, PlayLab, and the Analyst are not built yet and show unavailable states.
+Phase 4 stores those frozen 128-d play embeddings in PostgreSQL + pgvector and serves real nearest-neighbour retrieval (exact and HNSW, with database-side metadata filters) as **Similar Plays** on the Play view and a synchronized **Compare** view with deterministic evidence. Cosine similarity is a learned-representation distance, not a probability.
 
+PlayLab and the Analyst are not built yet and show unavailable states.
+
+- Phase 4 architecture: [docs/architecture/phase-4-retrieval-compare.md](docs/architecture/phase-4-retrieval-compare.md)
+- Retrieval evaluation (exact vs HNSW recall, latency, examples): [docs/evaluation/retrieval-v1.md](docs/evaluation/retrieval-v1.md)
+- Decision: [ADR-0005 pgvector similarity retrieval](docs/decisions/ADR-0005-pgvector-similarity-retrieval.md)
 - Phase 3 architecture: [docs/architecture/phase-3-ml.md](docs/architecture/phase-3-ml.md)
 - Model card: [docs/model-cards/trajectory-gnn-transformer-v1.md](docs/model-cards/trajectory-gnn-transformer-v1.md)
 - Evaluation summary: [docs/evaluation/trajectory-gnn-transformer-v1.md](docs/evaluation/trajectory-gnn-transformer-v1.md)
@@ -23,7 +28,7 @@ Similar plays, compare measures, PlayLab, and the Analyst are not built yet and 
 - Node.js ≥ 22 and pnpm ≥ 9
 - Python ≥ 3.12 and [uv](https://docs.astral.sh/uv/)
 - The NFL Big Data Bowl 2026 Analytics files (not in this repository; see below)
-- Docker is not needed
+- Docker with Compose (Docker Desktop or [Colima](https://github.com/abiosoft/colima)) for the similarity database. Replay and forecasts work without it.
 - Training: Apple Silicon (MPS), CUDA, or CPU. The reference run used an M1 Pro (16 GB) and MPS.
 
 ## Setup
@@ -76,16 +81,32 @@ pnpm mlflow:ui            # browse runs at http://localhost:5001
 
 `artifacts/` and `mlruns/` are Git-ignored. The reference run (30 epochs on the full train split, M1 Pro, MPS) trained in 1,116 s.
 
+### Similarity database (Phase 4)
+
+Needs the Phase 3 embedding export (`pnpm ml:embeddings`, above) and Docker. With Colima, run `colima start` first.
+
+```bash
+pnpm db:up                # docker compose up -d --wait postgres (pgvector 0.8.7, PostgreSQL 18, port 5432)
+pnpm db:migrate           # pgvector extension, tables, HNSW index (versioned SQL; safe to rerun)
+pnpm retrieval:load       # validate the export and load 14,108 embeddings (idempotent; ~15 s first time)
+pnpm retrieval:verify     # exact pgvector search vs an independent NumPy brute force
+pnpm retrieval:benchmark  # exact vs HNSW recall and latency -> docs/evaluation/retrieval-v1.{json,md}
+pnpm db:down              # stop the container (data kept)
+```
+
+Reset the database (destroys local database state): `docker compose down -v`, then `pnpm db:up && pnpm db:migrate && pnpm retrieval:load`. Normal startup never resets anything.
+
 ## Run
 
 ```bash
-pnpm dev          # API on :8000 and web on :3000, together
+pnpm db:up                     # once per boot, for Similar Plays and Compare similarity
+PLAYLENS_SUBSET=full pnpm dev  # API on :8000 (full dataset, matches the embeddings) and web on :3000
 # or separately
 pnpm dev:api      # uv run --directory services/api uvicorn playlens_api.main:app --reload --port 8000
 pnpm dev:web      # pnpm --filter web dev
 ```
 
-Open `http://localhost:3000/explore`, choose a play, or go straight to a play such as `http://localhost:3000/play/2023091008-3826`. If port 3000 is taken, Next.js picks the next free port; the API accepts any local port.
+Open `http://localhost:3000/explore`, choose a play, or go straight to a play such as `http://localhost:3000/play/2023123114-3710`, then **Find similar plays** and **Compare**. If port 3000 is taken, Next.js picks the next free port; the API accepts any local port.
 
 API docs: `http://localhost:8000/docs`. Health: `http://localhost:8000/health`.
 
@@ -99,6 +120,10 @@ API docs: `http://localhost:8000/docs`. Health: `http://localhost:8000/health`.
 | `PLAYLENS_SUBSET` | `dev` | Processed subset the API serves (`dev` or `full`); use `full` with the trained model |
 | `PLAYLENS_MODEL_DIR` | `<repo>/artifacts/models` | Trained model artifacts the API loads at startup |
 | `PLAYLENS_MODEL_DEVICE` | `cpu` | Inference device for the API |
+| `PLAYLENS_DATABASE_URL` | `postgresql://playlens_dev:playlens_dev@localhost:5432/playlens` | Retrieval database (docker compose `postgres`); empty disables similarity |
+| `PLAYLENS_EMBEDDING_MODEL_VERSION` | `trajectory-gnn-transformer-v1` | Embedding set searched by default |
+| `PLAYLENS_HNSW_EF_SEARCH` | `40` | HNSW candidate list size (raised to k); see the retrieval evaluation |
+| `PLAYLENS_DB_PORT` | `5432` | Host port of the database container |
 
 Web variables go in `apps/web/.env.local` (see `apps/web/.env.example`).
 
@@ -106,7 +131,7 @@ Web variables go in `apps/web/.env.local` (see `apps/web/.env.example`).
 
 - `pnpm lint` — ESLint (web) and Ruff (Python)
 - `pnpm typecheck` — TypeScript and mypy (strict)
-- `pnpm test` — Vitest and pytest
+- `pnpm test` — Vitest and pytest (the pgvector integration tests run when the database is up, or always with `PLAYLENS_REQUIRE_DB_TESTS=1`; `PLAYLENS_TEST_DATABASE_URL` overrides the target, and each run uses its own temporary schema)
 - `pnpm build` — production web build
 - `pnpm contracts:generate` — regenerate `packages/contracts` (OpenAPI and example payloads from a synthetic dataset)
 
@@ -114,9 +139,10 @@ Web variables go in `apps/web/.env.local` (see `apps/web/.env.example`).
 
 - `apps/web` — Next.js frontend
 - `services/api` — FastAPI service (`playlens_api`)
-- `ml/` — Python ML package (`playlens_ml`): `data` (dataset adapter, canonical schema), `datasets`, `features`, `graphs`, `models`, `training`, `evaluation`, `inference`, `embeddings`
+- `ml/` — Python ML package (`playlens_ml`): `data` (dataset adapter, canonical schema), `datasets`, `features`, `graphs`, `models`, `training`, `evaluation`, `inference`, `embeddings`, `descriptors` (structural tracking descriptors)
 - `configs/` — training configs (YAML)
 - `artifacts/`, `mlruns/` — local training outputs and MLflow store (ignored)
+- `services/api/src/playlens_api/retrieval` — pgvector store, SQL migrations, embedding import, verification, benchmark
 - `packages/contracts` — generated API contract artifacts shared with the web tests
 - `data/` — raw, interim, processed (ignored) and manifests (committed)
 - `docs/` — architecture, data notes, and decision records
@@ -129,3 +155,8 @@ Web variables go in `apps/web/.env.local` (see `apps/web/.env.example`).
 - **Python packages missing**: run `uv sync` from the repository root; it installs both workspace members.
 - **Play view says "No trajectory model is served"**: run `pnpm ml:train` (or copy an artifact into `artifacts/models/`), start the API with `PLAYLENS_SUBSET=full`, and restart it.
 - **Forecast returns `unsupported_origin`**: this model forecasts only from the last observed frame of a play.
+- **Similar plays: "temporarily unavailable" / `/health` retrieval `unavailable`**: start the database (`colima start` if needed, then `pnpm db:up`); the API reconnects within a few seconds. The `reason` field in `/health` names the cause.
+- **`retrieval_unavailable` … "computed on …@full-…, but this API serves …@dev-…"**: start the API with `PLAYLENS_SUBSET=full`; the embeddings cover the full dataset.
+- **"No embeddings are loaded" / "Pending migrations"**: run `pnpm db:migrate` and `pnpm retrieval:load`.
+- **"Phase 3 embedding artifact not found"**: run the Phase 3 workflow (`pnpm data:full`, `pnpm ml:splits`, `pnpm ml:train`, `pnpm ml:embeddings`). The loader never creates or downloads embeddings.
+- **Port 5432 already in use**: set `PLAYLENS_DB_PORT` for compose and the matching port in `PLAYLENS_DATABASE_URL`.

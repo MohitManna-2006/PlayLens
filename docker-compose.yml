@@ -1,21 +1,29 @@
-version: '3.8'
-
 services:
+  # PostgreSQL + pgvector: persisted play embeddings, small pre-snap search
+  # metadata, and similarity retrieval (Phase 4; see
+  # docs/architecture/phase-4-retrieval-compare.md). Development credentials only.
+  #   pnpm db:up        start and wait for the health check
+  #   pnpm db:migrate   create the pgvector extension and tables
   postgres:
-    image: ankane/pgvector:latest
+    # pgvector 0.8.7 on PostgreSQL 18 (multi-arch: arm64 and amd64). Pinned so the
+    # index and iterative-scan behaviour measured in docs/evaluation/retrieval-v1.md
+    # stays reproducible. CI uses the same tag.
+    image: pgvector/pgvector:0.8.7-pg18-trixie
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-playlens_dev}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-playlens_dev}
       POSTGRES_DB: ${POSTGRES_DB:-playlens}
     ports:
-      - "5432:5432"
+      - "${PLAYLENS_DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PostgreSQL 18 images keep data under /var/lib/postgresql/<major>/docker.
+      - postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-playlens_dev} -d ${POSTGRES_DB:-playlens}"]
-      interval: 5s
+      interval: 2s
       timeout: 5s
-      retries: 5
+      retries: 30
+      start_period: 5s
 
   redis:
     image: redis:7-alpine

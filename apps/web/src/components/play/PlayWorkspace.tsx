@@ -77,6 +77,9 @@ export function PlayWorkspace({ playId }: { playId: string }) {
   const client = getClient();
   const params = useSearchParams();
   const validId = parsePlayId(playId) !== null;
+  // Set when this play was opened from another play's similar-plays list.
+  const similarParam = params.get("similar_to");
+  const similarTo = similarParam && similarParam !== playId && parsePlayId(similarParam) !== null ? similarParam : null;
   const { detail, frames, series, seriesError } = usePlayData(validId ? playId : null);
   const models = useQuery({ queryKey: ["models"], queryFn: ({ signal }) => client.listModels(signal) });
   const served = (task: "trajectory" | "retrieval" | "counterfactual") => models.data?.find((m) => m.task === task && m.served) ?? null;
@@ -266,16 +269,6 @@ export function PlayWorkspace({ playId }: { playId: string }) {
         landingReason: detail.data.ball_landing ? null : "No landing point is supplied for this play",
       }
     : undefined;
-
-  const similarUnavailable = models.isError
-    ? `The model list could not be loaded: ${errorMessage(models.error)}`
-    : !models.data
-      ? null
-      : !served("retrieval")
-        ? "No retrieval model is served yet. Similar plays need a trained play embedding."
-        : series && series.snapIndex === null
-          ? "This play has no snap event, so the retrieval descriptor is undefined."
-          : null;
 
   /* ---- announcements for user seeks ---- */
   const seekTimer = useRef<number | null>(null);
@@ -523,6 +516,16 @@ export function PlayWorkspace({ playId }: { playId: string }) {
         }
         actions={
           <>
+            {similarTo && (
+              <Link
+                href={`/compare?left=${encodeURIComponent(similarTo)}&right=${encodeURIComponent(playId)}`}
+                className="btn"
+                aria-label={`Compare with play ${similarTo}`}
+              >
+                <GitCompareArrows size={16} strokeWidth={1.5} aria-hidden />
+                <span className="hidden md:inline">Compare with {similarTo}</span>
+              </Link>
+            )}
             <Link href={`/compare?left=${encodeURIComponent(playId)}`} className="btn btn-quiet" aria-label="Compare">
               <GitCompareArrows size={16} strokeWidth={1.5} aria-hidden />
               <span className="hidden md:inline">Compare</span>
@@ -711,7 +714,7 @@ export function PlayWorkspace({ playId }: { playId: string }) {
           items={stripItems}
         />
       )}
-      <SimilarPlays playId={playId} unavailableReason={similarUnavailable} />
+      <SimilarPlays key={playId} playId={playId} query={detail.data ?? null} />
       {series && clock && (
         <FrameDataTable series={series} time={clock} orientation={orientation} selectedId={selectedId} onSelect={(id) => select(id)} />
       )}

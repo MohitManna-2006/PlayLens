@@ -13,18 +13,24 @@ import json
 import sys
 import tempfile
 import warnings
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import polars as pl
 from playlens_ml.data.paths import find_repo_root
 from playlens_ml.data.preprocess import PreprocessOptions, run
 from playlens_ml.data.subset import DevSubsetRule
 from playlens_ml.data.testing import default_plays, write_raw_dataset
 from playlens_ml.datasets.testing import build_synthetic_ml_root, tiny_config
+from playlens_ml.embeddings.export import export_embeddings
 from playlens_ml.training.train import run_training
 
 from .config import Settings
 from .main import create_app
+from .retrieval.artifact import EmbeddingArtifact, load_artifact
+from .retrieval.memory import InMemoryVectorStore
 
 FIXED_TIME = "2026-01-01T00:00:00+00:00"
 HEADERS = {"X-Request-ID": "example"}
@@ -36,6 +42,8 @@ VOLATILE = {
     "run_id": "trajectory-test-example-run",
     "request_id": "example",
     "latency_ms": 1.0,
+    "database_ms": 1.0,
+    "search_ms": 1.0,
     "git_commit": "0000000000000000000000000000000000000000",
 }
 FLOAT_DIGITS = 4
@@ -70,7 +78,12 @@ def build() -> dict[str, Any]:
         plays = {f"{p.game_id}-{p.play_id}": p for p in default_plays()}
         left = next(i for i in summary.selected_ids if plays[i].direction == "left")
         app = create_app(
-            Settings(data_root=root, model_dir=root / "no-models", log_level="WARNING")
+            Settings(
+                data_root=root,
+                model_dir=root / "no-models",
+                database_url=None,
+                log_level="WARNING",
+            )
         )
         with TestClient(app, headers=HEADERS) as c:
 
@@ -91,6 +104,9 @@ def build() -> dict[str, Any]:
                 "error-model-unavailable.json": c.post(
                     "/api/v1/predict/trajectory", json={"play_id": left}
                 ).json(),
+                "error-retrieval-unavailable.json": c.post(
+                    "/api/v1/search/similar", json={"play_id": left}
+                ).json(),
             }
             openapi = app.openapi()
         examples.update(_model_examples(root / "ml", left, TestClient))
@@ -100,24 +116,71 @@ def build() -> dict[str, Any]:
     }
 
 
+def _spread(art: EmbeddingArtifact) -> EmbeddingArtifact:
+    """Replace the export's vectors with unit vectors on a cone at unevenly spaced
+    angles, so no two neighbours tie."""
+    n, dim = art.table.height, art.dimension
+    i = np.arange(n)
+    angles = 0.2 * i + 0.02 * i**2
+    v = np.zeros((n, dim), np.float64)
+    v[:, 0], v[:, 1], v[:, 2] = np.cos(angles), np.sin(angles), 0.5
+    v /= np.linalg.norm(v, axis=1, keepdims=True)
+    column = pl.Series(
+        "embedding", v.astype(np.float32), dtype=pl.Array(pl.Float32, dim)
+    )
+    return replace(art, table=art.table.with_columns(column))
+
+
 def _model_examples(root: Path, play_id: str, client_cls: Any) -> dict[str, Any]:
     """A tiny model trained for two epochs on synthetic data (CPU), served by the real
-    routes."""
+    routes. Similarity examples run the real search and compare services over the
+    in-memory reference store (the served store is PostgreSQL + pgvector, with the
+    same contract). Their vectors are deterministic and well separated instead of
+    the two-epoch model's, which are nearly identical, so the example ranking does
+    not depend on CPU floating-point details."""
     build_synthetic_ml_root(root)
-    run_training(
+    result = run_training(
         tiny_config(epochs=2),
         data_root=root,
         artifacts_root=root / "artifacts",
         config_path="playlens_ml.datasets.testing.tiny_config",
     )
+    assert result.artifact_dir is not None
+    export_embeddings(result.artifact_dir, subset="full", data_root=root)
+    store = InMemoryVectorStore.from_artifact(
+        _spread(load_artifact("trajectory-test-v1", "full", data_root=root)), root
+    )
     settings = Settings(
         data_root=root,
         subset="full",
         model_dir=root / "artifacts" / "models",
+        database_url=None,
+        embedding_model_version="trajectory-test-v1",
         log_level="WARNING",
     )
-    with client_cls(create_app(settings), headers=HEADERS) as c:
+    similar = "/api/v1/search/similar"
+    with client_cls(create_app(settings, retrieval_store=store), headers=HEADERS) as c:
+        neighbours = c.post(
+            similar, json={"play_id": play_id, "k": 3, "mode": "exact"}
+        ).json()
+        right = neighbours["results"][0]["play_id"]
         return {
+            "similar-plays.json": neighbours,
+            "similar-plays-empty.json": c.post(
+                similar,
+                json={"play_id": play_id, "mode": "exact", "filters": {"down": 4}},
+            ).json(),
+            "compare.json": c.post(
+                "/api/v1/compare",
+                json={"left_play_id": play_id, "right_play_id": right},
+            ).json(),
+            "error-invalid-filters.json": c.post(
+                similar,
+                json={
+                    "play_id": play_id,
+                    "filters": {"yards_to_go_min": 9, "yards_to_go_max": 3},
+                },
+            ).json(),
             "models.json": c.get("/api/v1/models").json(),
             "trajectory-prediction.json": c.post(
                 "/api/v1/predict/trajectory", json={"play_id": play_id}

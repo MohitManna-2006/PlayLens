@@ -36,7 +36,12 @@
       "split_version": "synthetic-weeks-v1-1d504e6a0cdc",
       "weights_bytes": 37710
     },
-    "retrieval": null,
+    "retrieval": {
+      "corpus_size": 13,
+      "distance": "cosine",
+      "index": "exact",
+      "representation": "128-d L2-normalised play embedding: the trajectory encoder's attention-pooled play representation"
+    },
     "served": true,
     "task": "trajectory",
     "trajectory": {

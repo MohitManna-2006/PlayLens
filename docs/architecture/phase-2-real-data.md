@@ -82,7 +82,7 @@ Rows are sorted by stable keys and written with fixed Parquet settings; a rerun 
 
 Every error is `{"error": {"code", "message", "status", "request_id", "details"}}`. Logs are JSON lines with request ID, path, status, and duration; responses carry `X-Request-ID` and `Server-Timing`. If the processed dataset is missing the API still starts, `/health` reports `degraded`, and data routes return 503 with the command to run. OpenAPI: `http://localhost:8000/docs`; a generated copy is in `packages/contracts/openapi.json`.
 
-Not served, deliberately: similarity, compare measures, trajectory prediction, PlayLab, evaluation, and the Analyst. `/api/v1/plays?sort=similarity` returns 422 `capability_unavailable`.
+Not served in Phase 2, deliberately: similarity, compare measures, trajectory prediction, PlayLab, evaluation, and the Analyst. (Trajectory prediction and evaluation arrived in Phase 3; similarity search and Compare in Phase 4, see [phase-4-retrieval-compare.md](phase-4-retrieval-compare.md).) `/api/v1/plays?sort=similarity` still returns 422 `capability_unavailable`: ranked neighbours come from `POST /api/v1/search/similar`.
 
 ## Web app
 
